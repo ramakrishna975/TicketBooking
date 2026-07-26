@@ -30,7 +30,7 @@ I then started a second command to look for an installed **JDK 21** (`/usr/libex
   actually installed, while still **compiling to Java 21 bytecode** as the spec requires
   (see 1.4).
 - "Package as a zip" → a Spring Boot application's deliverable is an **executable fat JAR**
-  (`mvn install` produces `target/booking-platform-0.0.1-SNAPSHOT.jar`). A jar *is* a zip
+  (`mvn install` produces `../../target/booking-platform-0.0.1-SNAPSHOT.jar`). A jar *is* a zip
   archive. If you specifically want a `.zip` distribution (jar + README + scripts), doc 6
   has a one-command recipe; say the word and I'll wire an assembly/zip step into the build.
 
@@ -39,15 +39,15 @@ I then started a second command to look for an installed **JDK 21** (`/usr/libex
 You asked, mid-build: *"Using IntelliJ for this project right? Also path of this project?"*
 
 - **Path:** `/Users/ram-13951/Personal/project`
-- **IntelliJ:** Yes — it's a standard Maven project. **File → Open → `pom.xml`**, enable
-  annotation processing for Lombok. IntelliJ has since created a `.idea/` folder, so it
+- **IntelliJ:** Yes — it's a standard Maven project. **File → Open → `../../pom.xml`**, enable
+  annotation processing for Lombok. IntelliJ has since created a `../../.idea` folder, so it
   looks like you already opened it. These are just informational; they didn't change the build.
 
 ### (c) No other approvals were required
 
 Everything else (creating files, running `mvn`, reading output) ran inside the working
 directory with no destructive operations, so no further confirmations were needed. I did
-not delete or overwrite anything you created — the directory started empty except for `.claude/`.
+not delete or overwrite anything you created — the directory started empty except for `../../.claude`.
 
 ---
 
@@ -75,7 +75,7 @@ which needs a **Docker daemon**. This machine has none. Per the brief's "build/t
 
 **I bound integration tests to the Failsafe plugin and excluded them from the default build.**
 
-Concretely, in `pom.xml`:
+Concretely, in `../../pom.xml`:
 - Unit tests are named `*Test` and run under **Surefire** (the `mvn install` gate).
 - Integration tests are named `*IT`, run under **Failsafe**, and are gated by a property
   `<skipITs>true</skipITs>` (Failsafe's own switch). So the default build skips them.
@@ -163,5 +163,5 @@ Final: `mvn install` → `BUILD SUCCESS`, jar packaged and installed to the loca
 
 Per the brief I **stopped at a working, installable build**: no app Dockerfile, no cloud
 deploy, no prod hardening beyond actuator + profiles. The only container artifact is
-`docker-compose.yml` for a **local** Postgres — dev infra, not deployment. See doc 6 for
+`../../docker-compose.yml` for a **local** Postgres — dev infra, not deployment. See doc 6 for
 what shipping-for-real would add.

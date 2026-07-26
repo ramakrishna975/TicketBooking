@@ -7,7 +7,7 @@ the code) and a ready-to-run **Postman collection**.
 
 ## 9.1 Swagger UI (interactive, live)
 
-Added via **springdoc-openapi** (`pom.xml`). Start the app and open the UI:
+Added via **springdoc-openapi** (`../../pom.xml`). Start the app and open the UI:
 
 ```bash
 mvn spring-boot:run           # dev profile, http://localhost:8080
@@ -37,21 +37,21 @@ I ran the app and exported the live spec so you have it as a file without starti
 
 | File | Format | Use |
 |---|---|---|
-| [`openapi.json`](openapi.json) | OpenAPI 3.0.1 JSON | Import into Postman/Insomnia, codegen, API tooling |
-| [`openapi.yaml`](openapi.yaml) | OpenAPI 3.0.1 YAML | Human-readable, diff-friendly, docs pipelines |
+| [`../openapi.json`](../openapi.json) | OpenAPI 3.0.1 JSON | Import into Postman/Insomnia, codegen, API tooling |
+| [`../openapi.yaml`](../openapi.yaml) | OpenAPI 3.0.1 YAML | Human-readable, diff-friendly, docs pipelines |
 
 It describes **22 operations** across **19 paths**, all request/response **schemas** (14), and
 the `bearerAuth` JWT security scheme. Regenerate anytime by hitting `/v3/api-docs(.yaml)` while
 the app runs — it's generated from the code, so it can't drift.
 
-You can also import `openapi.json` straight into Postman (**Import → File**) if you'd rather
+You can also import `../openapi.json` straight into Postman (**Import → File**) if you'd rather
 Postman build requests from the spec than use the curated collection below.
 
 ---
 
 ## 9.3 Postman collection (curated, chained flow)
 
-File: [`booking-platform.postman_collection.json`](booking-platform.postman_collection.json)
+File: [`../booking-platform.postman_collection.json`](../booking-platform.postman_collection.json)
 
 **Import:** Postman → **Import** → select the file. It appears as *Booking Platform API* with
 folders: Auth, Users, Venues, Events, Bookings, Admin, Ops.
@@ -87,8 +87,8 @@ provision one deliberately.
 
 | File | What |
 |---|---|
-| `pom.xml` | Added `springdoc-openapi-starter-webmvc-ui`. |
+| `../../pom.xml` | Added `springdoc-openapi-starter-webmvc-ui`. |
 | `config/OpenApiConfig.java` | API metadata + `bearerAuth` JWT scheme (the Authorize button). |
 | `security/SecurityConfig.java` | Permits `/v3/api-docs/**` and `/swagger-ui/**` without auth. |
-| `docs/openapi.json`, `docs/openapi.yaml` | Exported OpenAPI document. |
-| `docs/booking-platform.postman_collection.json` | The Postman collection. |
+| `../openapi.json`, `../openapi.yaml` | Exported OpenAPI document. |
+| `../booking-platform.postman_collection.json` | The Postman collection. |

@@ -30,7 +30,7 @@ Building jar: target/booking-platform-0.0.1-SNAPSHOT.jar
 BUILD SUCCESS
 ```
 
-Artifact: **`target/booking-platform-0.0.1-SNAPSHOT.jar`** — a self-contained Spring Boot fat
+Artifact: **`../../target/booking-platform-0.0.1-SNAPSHOT.jar`** — a self-contained Spring Boot fat
 jar (~62 MB, all dependencies nested). A jar *is* a zip; `unzip -l target/*.jar` lists its contents.
 
 Faster variants:
@@ -152,7 +152,7 @@ would be — roughly in order:
 1. **Secrets & config** — externalise `booking.jwt.secret` and DB creds into a secret manager;
    fail fast if the JWT secret is the dev placeholder.
 2. **App container** — a Dockerfile (or Spring Boot's `bootBuildImage`) producing an OCI image;
-   wire the existing `docker-compose.yml` to run app + db together for local prod-like runs.
+   wire the existing `../../docker-compose.yml` to run app + db together for local prod-like runs.
 3. **DB ops** — run Flyway as a gated migration step in the pipeline; add a rollback/backup story.
 4. **Security hardening** — refresh tokens / shorter access-token TTLs, rate-limiting on
    `/api/auth/*`, CORS policy, HTTPS termination, lock down actuator behind auth/network.

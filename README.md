@@ -22,7 +22,7 @@ instructions are in **[`docs/SETUP-GUIDE.txt`](docs/SETUP-GUIDE.txt)**.
   https://maven.apache.org/install.html
 
 New to the code? Start with **[`docs/README.md`](docs/README.md)** → then
-`docs/08-learning-guide.md`. Every source file also has plain-language comments at the bottom.
+`docs/md/08-learning-guide.md`. Every source file also has plain-language comments at the bottom.
 
 ## Run
 

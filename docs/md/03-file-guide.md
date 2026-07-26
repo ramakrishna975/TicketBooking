@@ -13,10 +13,10 @@ which file to open.
 
 | File | What it does |
 |---|---|
-| `pom.xml` | Maven build. Declares the stack, pins **Lombok 1.18.38** (JDK-25 fix), binds `*Test`→Surefire and `*IT`→Failsafe with `skipITs=true` default, configures the Spring Boot fat-jar repackage. |
-| `docker-compose.yml` | **Local** Postgres for the `postgres` profile. Dev infra only — not a deployment artifact. |
-| `README.md` | Quick-start and feature map. |
-| `.gitignore` | Ignores `target/`, IDE files, `.DS_Store`. |
+| `../../pom.xml` | Maven build. Declares the stack, pins **Lombok 1.18.38** (JDK-25 fix), binds `*Test`→Surefire and `*IT`→Failsafe with `skipITs=true` default, configures the Spring Boot fat-jar repackage. |
+| `../../docker-compose.yml` | **Local** Postgres for the `postgres` profile. Dev infra only — not a deployment artifact. |
+| `../../README.md` | Quick-start and feature map. |
+| `../../.gitignore` | Ignores `../../target`, IDE files, `.DS_Store`. |
 
 ---
 

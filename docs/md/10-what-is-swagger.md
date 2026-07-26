@@ -60,7 +60,7 @@ and the `LoginRequest` / `TokenResponse` records.
 
 ## 10.3 How is it generated in THIS project? (step by step)
 
-1. **You add one dependency** — `springdoc-openapi-starter-webmvc-ui` in `pom.xml`. That's the
+1. **You add one dependency** — `springdoc-openapi-starter-webmvc-ui` in `../../pom.xml`. That's the
    whole install.
 
 2. **At startup, springdoc scans the application.** It asks Spring for every
@@ -96,7 +96,7 @@ and the `LoginRequest` / `TokenResponse` records.
 
 > **"Directly" means runtime, not build time.** The document isn't baked into the jar as a
 > file; it's produced in memory each time the app boots and served over HTTP. (In §9.2 I also
-> *exported* a snapshot to `docs/openapi.json` / `.yaml` so you have a file copy, but that's an
+> *exported* a snapshot to `../openapi.json` / `.yaml` so you have a file copy, but that's an
 > optional convenience — the source of truth is the running app.)
 
 ---
@@ -127,7 +127,7 @@ Nothing in that table is a document I typed — it's your existing code, read by
 - **Frontend/mobile teams work in parallel.** They read the OpenAPI document to know exactly
   what to send and expect, before the backend is even finished.
 
-- **Client code generation.** Tools (OpenAPI Generator, etc.) can read `openapi.json` and
+- **Client code generation.** Tools (OpenAPI Generator, etc.) can read `../openapi.json` and
   auto-produce a typed client library in TypeScript, Java, Python, and more — so callers don't
   hand-write HTTP code.
 
@@ -159,6 +159,6 @@ list in `06-shipping.md`.
 - **It's generated automatically** by the `springdoc-openapi` dependency, by scanning your
   controllers and DTOs at startup — I only added small metadata hints.
 - **It's served live** at `/v3/api-docs` (document) and `/swagger-ui.html` (interactive page);
-  I also exported a file copy into `docs/`.
+  I also exported a file copy into `..`.
 - **It's useful** for accurate docs, a try-it console, parallel frontend work, client
   code-gen, tool imports, and fast onboarding.

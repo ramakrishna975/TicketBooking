@@ -97,4 +97,4 @@ Doc 6 §6.8 lays out the concrete "ship it for real" roadmap for each of these.
 2. `SecurityConfig.java` + `JwtAuthenticationFilter.java` — how auth actually works.
 3. `EventService.java` — caching + eviction + ownership checks in one place.
 4. `GlobalExceptionHandler.java` — how every error becomes a ProblemDetail.
-5. The tests under `src/test` — they double as executable documentation of the rules above.
+5. The tests under `../../src/test` — they double as executable documentation of the rules above.

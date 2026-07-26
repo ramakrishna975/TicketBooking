@@ -33,7 +33,7 @@ creates objects for you (called *beans*), wires them together, and starts a web 
 **In this project:** the main class also switches on three whole-app features — caching,
 scheduled jobs, and typed configuration.
 
-**📁 Where to look:** `src/main/java/com/example/booking/BookingApplication.java`
+**📁 Where to look:** `../../src/main/java/com/example/booking/BookingApplication.java`
 (the `@SpringBootApplication`, `@EnableCaching`, `@EnableScheduling`,
 `@EnableConfigurationProperties` lines).
 
@@ -69,7 +69,7 @@ inside.
 lives together.
 
 **📁 Where to look:** the top-level folders under
-`src/main/java/com/example/booking/` — `user/`, `event/`, `venue/`, `booking/`, `payment/`,
+`../../src/main/java/com/example/booking` — `user/`, `event/`, `venue/`, `booking/`, `payment/`,
 `admin/`, `security/`, `common/`, `config/`, `notification/`.
 
 ---
@@ -227,7 +227,7 @@ in-memory database, zero setup) or `postgres` mode (a real database). You pick o
 the code doesn't change.
 
 **📁 Where to look:**
-- Shared config + default profile: `src/main/resources/application.yml`
+- Shared config + default profile: `../../src/main/resources/application.yml`
 - Dev (H2, auto-created schema): `application-dev.yml`
 - Postgres (real DB, strict schema): `application-postgres.yml`
 
@@ -240,8 +240,8 @@ SQL files (`V1__…`, `V2__…`). Flyway runs them in order, once, and records w
 makes the schema **reproducible** on every machine.
 
 **📁 Where to look:**
-- `src/main/resources/db/migration/V1__core_schema.sql` (users, venues, events, ticket types)
-- `src/main/resources/db/migration/V2__booking_schema.sql` (bookings, booking items)
+- `../../src/main/resources/db/migration/V1__core_schema.sql` (users, venues, events, ticket types)
+- `../../src/main/resources/db/migration/V2__booking_schema.sql` (bookings, booking items)
 
 ---
 
@@ -352,7 +352,7 @@ in ticket-issuing can never undo a captured payment.
 **Concept:** Spring Boot can expose "ops" endpoints — is the app healthy? what are its metrics?
 We expose **only** `health`, `info`, and `metrics` (nothing sensitive).
 
-**📁 Where to look:** `src/main/resources/application.yml` (the `management.endpoints` section).
+**📁 Where to look:** `../../src/main/resources/application.yml` (the `management.endpoints` section).
 Try `GET /actuator/health`.
 
 ---
