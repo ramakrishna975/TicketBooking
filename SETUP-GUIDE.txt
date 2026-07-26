@@ -29,9 +29,20 @@ Estimated time: ~15 minutes (most of it is the one-time installs).
 -------------------------------------------------------------------------------
  STEP 1 - GET THE PROJECT ONTO YOUR LAPTOP
 -------------------------------------------------------------------------------
+ Depending on how it was shared with you:
+
  - If you received a ZIP file: unzip it somewhere simple, e.g. your Desktop.
-   You should end up with a folder named "project" that contains a file called
-   "pom.xml" and a "src" folder inside it.
+   You should end up with a folder that contains a file called "pom.xml" and a
+   "src" folder inside it.
+
+ - If you received a GitHub link: install Git (https://git-scm.com), then in a
+   terminal run:   git clone <the-link>
+
+ - If you received a file ending in ".bundle": install Git, put the file on your
+   Desktop, then run:
+        git clone Desktop/booking-platform.bundle booking-platform
+   That creates a "booking-platform" folder with the whole project inside.
+
  - Remember where this folder is - you will open it in IntelliJ next.
 
 
