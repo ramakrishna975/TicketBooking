@@ -22,7 +22,10 @@ Estimated time: ~15 minutes (most of it is the one-time installs).
  3) (Optional) Postman - only if you want to test the APIs with clicks
       - https://www.postman.com/downloads
 
- You do NOT need to install Maven separately - IntelliJ brings its own.
+ IntelliJ comes with its own Maven, so the green Run button and the Maven panel
+ work without installing anything extra. Maven is only needed if you want to run
+ build commands from a TERMINAL (like "mvn spring-boot:run"); to do that, install
+ Maven from https://maven.apache.org/install.html (and check with: mvn -v).
  You do NOT need Docker or any database for the default run.
 
 
@@ -102,10 +105,8 @@ Estimated time: ~15 minutes (most of it is the one-time installs).
    2) Expand  booking-platform > Plugins > spring-boot  and double-click
       "spring-boot:run".
 
- WAY C - using the built-in Terminal (bottom of IntelliJ):
-        ./mvnw spring-boot:run       (Mac/Linux)
-        mvnw.cmd spring-boot:run     (Windows)
-      or just:  mvn spring-boot:run  (if you have Maven installed)
+ WAY C - using a Terminal (needs Maven installed - see STEP 0):
+        mvn spring-boot:run
 
  SUCCESS looks like: the console prints a big "Spring" banner and ends with a
  line similar to:
@@ -158,7 +159,7 @@ Estimated time: ~15 minutes (most of it is the one-time installs).
  STEP 8 - (OPTIONAL) USE THE POSTMAN COLLECTION
 -------------------------------------------------------------------------------
  1) Open Postman > Import.
- 2) Choose the file:  docs/booking-platform.postman_collection.json
+ 2) Choose the file:  booking-platform.postman_collection.json
  3) Run the requests top to bottom. The login requests automatically save your
     token, and the create requests save ids, so everything chains together.
     (Admin requests use admin@x.com / password1, already set up.)
@@ -194,8 +195,8 @@ Estimated time: ~15 minutes (most of it is the one-time installs).
         offline.
 
  * The code compiles but you want a clean rebuild:
-     -> In the Terminal:  ./mvnw clean install   (Mac/Linux)
-                          mvnw.cmd clean install  (Windows)
+     -> In IntelliJ:  Build > Rebuild Project
+     -> Or in a Terminal (needs Maven):  mvn clean install
 
  * Want to run against a REAL PostgreSQL instead of the built-in database?
      -> That is optional and only if you have Docker. In the Terminal:
@@ -209,10 +210,10 @@ Estimated time: ~15 minutes (most of it is the one-time installs).
 -------------------------------------------------------------------------------
  WANT TO UNDERSTAND THE CODE?
 -------------------------------------------------------------------------------
- - Start with the folder  docs/  - open  docs/README.md  for a guided tour.
- - docs/08-learning-guide.md explains every concept in simple words and points
+ - You are in the  docs/  folder - open  README.md  here for a guided tour.
+ - 08-learning-guide.md explains every concept in simple words and points
    to the exact file for each.
- - docs/11-how-each-part-works.md explains each feature (users, events, bookings,
+ - 11-how-each-part-works.md explains each feature (users, events, bookings,
    payment...) in plain language.
  - Every code file has comments at the BOTTOM explaining what it does - first a
    technical summary, then an "IN SIMPLE WORDS (for a fresher)" explanation.

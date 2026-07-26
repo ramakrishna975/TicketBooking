@@ -18,6 +18,17 @@ This folder is the guided tour of the project. Read it before diving into the co
 | 10 | [10-what-is-swagger.md](10-what-is-swagger.md) | **What Swagger/OpenAPI is**, how the dependency auto-generates it from the code, and what it's used for |
 | 11 | [11-how-each-part-works.md](11-how-each-part-works.md) | **Feature-by-feature walkthrough** (user, security, venue, event, booking, payment, notification, admin) — client-friendly "plain words" + "under the hood" technical detail + files |
 
+## Plain-text docs (in this same folder)
+
+These are `.txt` versions for quick reading / sharing with non-technical folks:
+
+| File | What it covers |
+|------|----------------|
+| [SETUP-GUIDE.txt](SETUP-GUIDE.txt) | Step-by-step: set up and run the app in IntelliJ (start here to run it) |
+| [PROJECT-DOCUMENTATION.txt](PROJECT-DOCUMENTATION.txt) | The complete single-file document — everything, including config/DB line-by-line |
+| [OVERVIEW.txt](OVERVIEW.txt) | Short summary of what the project contains |
+| [HOW-IT-WORKS.txt](HOW-IT-WORKS.txt) | Each feature in plain words + technical detail |
+
 ## 30-second summary
 
 An **event/ticket booking platform** built with **Spring Boot 3.4 (Java 21)**, organised

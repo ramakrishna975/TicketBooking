@@ -232,7 +232,7 @@ FILES
    6. ADMIN watches over users and events.
 
 For the same story with clickable, code-level detail per concept, see
-docs/08-learning-guide.md. For the request-by-request API view, see
-docs/04-request-flows.md. (This text file mirrors docs/11-how-each-part-works.md.)
+08-learning-guide.md. For the request-by-request API view, see
+04-request-flows.md. (This text file mirrors 11-how-each-part-works.md.)
 
 ===============================================================================

@@ -72,8 +72,7 @@ like Swagger UI or Postman, or from a separate front-end app.
 ===============================================================================
   - Language : Java 21
   - Framework: Spring Boot 3.4 (Spring Web, Spring Data JPA, Spring Security)
-  - Build    : Maven (a Maven "wrapper" is included, so Maven need not be
-               installed - use ./mvnw)
+  - Build    : Maven (IntelliJ bundles its own; install Maven only for terminal use)
   - Database : H2 (in-memory) for local/dev; PostgreSQL for real mode
   - Schema   : Flyway migrations (for PostgreSQL)
   - Auth     : JWT (JSON Web Tokens), HS256 signed
@@ -94,7 +93,7 @@ Full beginner steps are in SETUP-GUIDE.txt. In short:
   4) Set the project SDK to Java 21; enable Lombok (plugin + annotation
      processing) - otherwise the code shows red errors.
   5) Run the class  com.example.booking.BookingApplication
-     (or in a terminal:  ./mvnw spring-boot:run )
+     (or in a terminal, if Maven is installed:  mvn spring-boot:run )
   6) Open http://localhost:8080/swagger-ui.html
 
 Default mode uses the in-memory H2 database, so NO database or Docker setup is
@@ -317,7 +316,7 @@ it, ONE profile-specific file is layered:
 
 Ways to choose the postgres profile:
   - Environment variable:  SPRING_PROFILES_ACTIVE=postgres
-  - Maven:                 ./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
+  - Maven:                 mvn spring-boot:run -Dspring-boot.run.profiles=postgres
   - IntelliJ run config:   set "Active profiles" to postgres
 
 The SAME code runs in both modes - only the settings differ. That mirrors real
@@ -430,7 +429,7 @@ Relationships in words:
  8. THE FEATURES, ONE BY ONE
 ===============================================================================
 (Each feature is also documented at the bottom of its own code files, and in
-docs/11-how-each-part-works.md.)
+11-how-each-part-works.md.)
 
 USER - accounts and who you are
   Register with email + password and a role (ATTENDEE or ORGANIZER; ADMIN cannot
@@ -626,7 +625,7 @@ booking) are checked in the services.
     POST /api/admin/users/{id}/enable      enable a user
     POST /api/admin/events/{id}/cancel     force-cancel any event
 
-Full request/response shapes: see docs/05-api-reference.md, or the live Swagger
+Full request/response shapes: see 05-api-reference.md, or the live Swagger
 page at /swagger-ui.html.
 
 
@@ -644,21 +643,22 @@ page at /swagger-ui.html.
   - INTEGRATION test (real PostgreSQL via Testcontainers, needs Docker): drives
     the whole app over HTTP - register, create, publish, book, pay. File ends in
     *IT (BookingFlowIT). It is SKIPPED by default so the normal build needs no
-    Docker; run it with:  ./mvnw verify -DskipITs=false
+    Docker; run it with:  mvn verify -DskipITs=false
 
 
 ===============================================================================
- 18. BUILDING & PACKAGING (Maven, profiles, the wrapper)
+ 18. BUILDING & PACKAGING (Maven, profiles)
 ===============================================================================
-  - ./mvnw spring-boot:run     run the app (dev/H2)
-  - ./mvnw install             compile + run unit tests + build the runnable jar
-                               (integration tests skipped)
-  - ./mvnw verify -DskipITs=false   also run the integration test (needs Docker)
+  (These terminal commands need Maven installed - https://maven.apache.org.
+   Inside IntelliJ you can do the same via the green Run button and the Maven
+   panel, using IntelliJ's bundled Maven, without installing anything.)
+  - mvn spring-boot:run     run the app (dev/H2)
+  - mvn install             compile + run unit tests + build the runnable jar
+                            (integration tests skipped)
+  - mvn verify -DskipITs=false   also run the integration test (needs Docker)
   - The build produces a single runnable file:
         target/booking-platform-0.0.1-SNAPSHOT.jar
     which you can run anywhere with:  java -jar <that file>
-  - "./mvnw" is the Maven WRAPPER: it downloads the correct Maven automatically,
-    so Maven need not be installed.
   - Integration tests are bound to the Failsafe plugin and excluded by default via
     a skipITs flag - that is why the normal build does not need Docker.
 
@@ -672,9 +672,9 @@ page at /swagger-ui.html.
   - The OpenAPI document (the machine-readable API description):
         http://localhost:8080/v3/api-docs        (JSON)
         http://localhost:8080/v3/api-docs.yaml     (YAML)
-    Exported copies are saved in docs/openapi.json and docs/openapi.yaml.
+    Exported copies are saved in openapi.json and openapi.yaml.
   - Postman collection (import and click through the whole flow):
-        docs/booking-platform.postman_collection.json
+        booking-platform.postman_collection.json
     Login requests auto-save the token; create requests auto-save ids, so the
     requests chain together. Admin requests use admin@x.com / password1.
 
@@ -682,7 +682,7 @@ page at /swagger-ui.html.
 ===============================================================================
  20. FILE-BY-FILE REFERENCE
 ===============================================================================
-For a complete list of what every file does, see docs/03-file-guide.md. In
+For a complete list of what every file does, see 03-file-guide.md. In
 addition, EVERY code file has explanation comments at the BOTTOM of the file:
 first a technical summary, then an "IN SIMPLE WORDS (for a fresher)" section.
 
@@ -737,10 +737,11 @@ does NOT include:
 
 Each of these is a natural next step. Because payment and notifications sit behind
 clean interfaces/seams, adding the real versions later does not require changing
-the booking logic. More detail is in docs/06-shipping.md (section 6.8) and
-docs/07-glossary-and-faq.md (section 7.3).
+the booking logic. More detail is in 06-shipping.md (section 6.8) and
+07-glossary-and-faq.md (section 7.3).
 
 ###############################################################################
-#  End of document. For more, see the docs/ folder (start at docs/README.md), #
+#  End of document. For more, see the other files in this docs/ folder      #
+#  (start at README.md), plus ../README.md at the project root.              #
 #  HOW-IT-WORKS.txt, OVERVIEW.txt, and SETUP-GUIDE.txt.                        #
 ###############################################################################
