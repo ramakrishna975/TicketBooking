@@ -1,0 +1,24 @@
+# Local Postgres for the `postgres` profile. Dev infra only — not a deployment artifact.
+# Usage:
+#   docker compose up -d
+#   SPRING_PROFILES_ACTIVE=postgres mvn spring-boot:run
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: booking-postgres
+    environment:
+      POSTGRES_DB: booking
+      POSTGRES_USER: booking
+      POSTGRES_PASSWORD: booking
+    ports:
+      - "5432:5432"
+    volumes:
+      - booking-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U booking -d booking"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  booking-pgdata:

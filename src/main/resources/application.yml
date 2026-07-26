@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: booking-platform
+  profiles:
+    # Default to the H2-backed dev profile so the app boots with zero infra.
+    default: dev
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+# Actuator: expose health, info and metrics only.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+info:
+  app:
+    name: ${spring.application.name}
+    description: Event/ticket booking platform
+
+# Application-specific knobs.
+booking:
+  jwt:
+    # 256-bit secret for HS256 (override in real deployments).
+    secret: "change-me-in-prod-please-use-a-long-random-256-bit-secret-value"
+    expiration-minutes: 120
+  hold:
+    # How long a booking may hold seats before it expires unpaid.
+    window-minutes: 15
+    sweep-interval-ms: 60000
+  reminder:
+    interval-ms: 300000

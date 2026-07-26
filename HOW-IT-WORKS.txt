@@ -1,0 +1,238 @@
+===============================================================================
+ BOOKING PLATFORM - HOW EACH PART WORKS
+===============================================================================
+
+This explains the app one feature at a time, in the order they matter to a real
+user. Each part is explained twice: first IN PLAIN WORDS (as if to a customer),
+then UNDER THE HOOD (the technical detail), then FILES (where it lives in code).
+
+Features covered:
+   User -> Security -> Venue -> Event -> Booking -> Payment -> Notification -> Admin
+
+
+-------------------------------------------------------------------------------
+ 1. USER  -  accounts and who you are
+-------------------------------------------------------------------------------
+IN PLAIN WORDS
+   Before doing anything, a person creates an account with an email and password
+   and picks their type: a fan (Attendee), a promoter (Organizer), or a staff
+   moderator (Admin). Signing up as an Admin is NOT allowed from the public form;
+   admins are set up privately by the business.
+
+UNDER THE HOOD
+   - A user is a database row: unique email, a HASHED password (never the real
+     one), display name, role, an enabled flag, and a created-at time.
+   - Registration refuses two things: signing up as ADMIN, and a duplicate email
+     - both return a clear "409 Conflict".
+   - The password is scrambled with BCrypt before saving, so a database leak does
+     not expose real passwords.
+
+FILES
+   user/User.java ............ the account (database entity)
+   user/Role.java ............ the three roles
+   user/UserService.java ..... the sign-up rules
+   user/AuthController.java .. /api/auth/register and /api/auth/login
+   user/UserController.java .. /api/users/me (see your own profile)
+   user/dto/ ................. shapes of data going in/out
+
+
+-------------------------------------------------------------------------------
+ 2. SECURITY  -  logging in and staying logged in
+-------------------------------------------------------------------------------
+IN PLAIN WORDS
+   When you log in, the system checks your password and hands you a digital
+   wristband (a token). For everything afterward you show the wristband instead
+   of retyping your password. The wristband also says your role, so the system
+   knows what you may do. Some pages are public, some need a wristband, and some
+   need a specific role.
+
+UNDER THE HOOD
+   - Login checks email + password against the stored BCrypt hash, then issues a
+     JWT: a small, cryptographically SIGNED token holding your email and role.
+     Being signed, it cannot be forged or edited.
+   - The system is STATELESS (no server-side session). On each request a filter
+     reads the "Authorization: Bearer <token>" header and confirms who you are.
+   - Access is guarded on two levels: broad URL rules (only Admin may touch
+     /api/admin/**) and precise method rules right on each action. Plus ownership
+     checks (is this YOUR booking?) in the service code.
+   - Not logged in -> 401. Logged in but wrong role/owner -> 403. Both as clean,
+     consistent JSON.
+
+FILES
+   security/JwtService.java ............... creates/validates the token
+   security/JwtAuthenticationFilter.java . reads the token on every request
+   security/AppUserDetailsService.java ... looks up the user for login
+   security/SecurityConfig.java .......... URL rules, method rules, encoder
+   security/SecurityErrorHandlers.java ... turns 401/403 into standard JSON
+
+
+-------------------------------------------------------------------------------
+ 3. VENUE  -  the place an event happens
+-------------------------------------------------------------------------------
+IN PLAIN WORDS
+   A venue is a location - a hall, a stadium - with an address and a capacity
+   (how many people fit). Organizers set these up to attach events to them.
+   Anyone can browse venues; only organizers/admins can create them.
+
+UNDER THE HOOD
+   - A venue row holds name, address, city, and capacity.
+   - Capacity matters later: an event's total tickets cannot exceed the venue's
+     capacity (the system enforces this).
+   - Reading venues is public; creating one needs the ORGANIZER/ADMIN role.
+
+FILES
+   venue/Venue.java ............ the venue (database entity)
+   venue/VenueService.java ..... create / list / fetch (not found -> 404)
+   venue/VenueController.java .. public GET, role-guarded POST
+   venue/dto/ .................. request/response shapes
+
+
+-------------------------------------------------------------------------------
+ 4. EVENT  -  the thing people buy tickets for
+-------------------------------------------------------------------------------
+IN PLAIN WORDS
+   An organizer creates an event (a concert, a match) at a venue, with start/end
+   times and one or more ticket types - tiers like General and VIP, each with its
+   own price and quantity. A new event starts as a private DRAFT. When ready, the
+   organizer PUBLISHES it, and only then can the public see and buy. They can also
+   CANCEL it. Organizers can only touch their own events.
+
+UNDER THE HOOD
+   - An event links to a venue and its organizer, and owns a list of ticket types
+     (each tier tracks total and live-available quantity - the seat count).
+   - Creation checks end-time is after start-time, and total tickets fit the venue
+     capacity - otherwise a 409.
+   - The public "list events" page is CACHED for speed (read constantly, changes
+     rarely); creating/publishing/cancelling clears the cache so nobody sees stale
+     data.
+   - Publishing/cancelling is ownership-checked - you cannot publish someone
+     else's event.
+
+FILES
+   event/Event.java, event/EventStatus.java . event + draft/published/cancelled
+   event/TicketType.java ..................... a priced tier holding the seat count
+   event/EventService.java ................... create/publish/cancel + cached list
+   event/EventController.java ................ public browse; guarded writes
+   event/dto/ ................................ request/response shapes
+
+
+-------------------------------------------------------------------------------
+ 5. BOOKING  -  reserving and holding seats  (the heart of the app)
+-------------------------------------------------------------------------------
+IN PLAIN WORDS
+   When an attendee books, the seats are immediately HELD for them - like a cart
+   reserved for a short time (15 minutes). The booking is "pending" until they
+   pay. If two people try to grab the last seats at the exact same moment, the
+   system makes sure only ONE succeeds - it never sells the same seat twice. If
+   they do not pay in time, the hold is released and the seats go back on sale.
+
+UNDER THE HOOD
+   - Booking an event that is not PUBLISHED is refused (409). For each tier the
+     system checks availability, DECREMENTS the available count (seats held), and
+     records the price at that moment. The booking gets an expiry 15 minutes out
+     and status PENDING.
+   - The "no double-selling" guarantee uses OPTIMISTIC LOCKING: each tier carries
+     a hidden version number. Two simultaneous bookings both try to update it, but
+     the database lets only one win; the loser fails safely - no seat lost or
+     oversold.
+   - The whole booking is one TRANSACTION (all-or-nothing), so a half-finished
+     booking is never left behind.
+   - The booking itself also has a version number, so "pay it" and "expire it"
+     cannot collide and corrupt its state.
+
+FILES
+   booking/Booking.java, BookingItem.java, BookingStatus.java . booking + items +
+                                                                 lifecycle
+   booking/BookingService.java ..... core logic: create/pay/cancel/expire
+   booking/BookingController.java .. the attendee endpoints
+   event/TicketTypeRepository.java . the "lock the tier while holding seats" read
+
+
+-------------------------------------------------------------------------------
+ 6. PAYMENT  -  charging for the booking  (faked, but realistic)
+-------------------------------------------------------------------------------
+IN PLAIN WORDS
+   When the attendee pays, the booking becomes PAID and their tickets are issued.
+   There is NO real bank connected in this build - payment is simulated - but it
+   is built so a real provider (Stripe, Razorpay, etc.) can drop in later WITHOUT
+   changing any booking logic.
+
+UNDER THE HOOD
+   - Payment sits behind an INTERFACE (a contract: "charge this amount, tell me
+     success/failure"). The current version is a fake that approves any valid
+     amount and returns a reference; it declines a zero/negative amount so the
+     failure path stays tested.
+   - Paying checks the booking is still PENDING and NOT expired - if the hold
+     lapsed, payment is not even attempted (409). On success the booking becomes
+     PAID, stores the reference, and clears its expiry.
+   - Swapping in a real gateway = one new class implementing the same interface;
+     the booking code never knows the difference ("program to an interface").
+
+FILES
+   payment/PaymentGateway.java ...... the contract (interface)
+   payment/FakePaymentGateway.java .. the simulated implementation
+   booking/BookingService.java ...... the pay(...) method that uses the gateway
+
+
+-------------------------------------------------------------------------------
+ 7. NOTIFICATION  -  telling people what happened
+-------------------------------------------------------------------------------
+IN PLAIN WORDS
+   After a successful payment the customer should get their tickets and a
+   confirmation; before an event they get a reminder. In this build those messages
+   are simulated (written to the app's log) rather than emailed/texted - but wired
+   so real email/SMS can be added later. Importantly, tickets are only issued
+   AFTER the payment is truly finalized, never before.
+
+UNDER THE HOOD
+   - Instead of issuing tickets inline during payment, paying PUBLISHES an internal
+     "BookingPaid" event. A listener handles it, but only AFTER the payment
+     transaction fully commits. This guarantees tickets are never issued for a
+     payment that later fails, and a captured payment is never undone.
+   - Reminders are sent by a scheduled background job that periodically finds paid
+     bookings for soon-to-start events.
+   - The notification service is a simple component that logs the action today -
+     the one place to later plug in a real email/SMS provider.
+
+FILES
+   booking/BookingPaidEvent.java ....... the internal "it's paid" signal
+   booking/BookingPaidListener.java .... issues tickets, but only after commit
+   booking/BookingScheduler.java ....... timed jobs (expire holds, send reminders)
+   notification/NotificationService.java  where tickets/reminders are "sent"
+
+
+-------------------------------------------------------------------------------
+ 8. ADMIN  -  moderation
+-------------------------------------------------------------------------------
+IN PLAIN WORDS
+   Admins are trusted staff. They can list users, disable or re-enable an account
+   (e.g. a bad actor), and force-cancel any event regardless of who created it.
+   These powers are locked to the Admin role.
+
+UNDER THE HOOD
+   - Every admin endpoint is guarded twice: a URL rule (/api/admin/** needs Admin)
+     and a method rule (hasRole('ADMIN')).
+   - Disabling a user flips their enabled flag so they can no longer log in;
+     force-cancel sets an event to CANCELLED and clears the public listing cache.
+
+FILES
+   admin/AdminController.java .. the admin-only endpoints
+   user/UserService.java ....... enable/disable logic
+   event/EventService.java ..... the admin force-cancel
+
+
+-------------------------------------------------------------------------------
+ HOW IT ALL CONNECTS  (one line per step)
+-------------------------------------------------------------------------------
+   1. USER signs up and SECURITY gives them a token.
+   2. An organizer sets up a VENUE and an EVENT with ticket tiers, then publishes.
+   3. An attendee makes a BOOKING, which HOLDS seats safely.
+   4. PAYMENT turns the pending booking into a paid one.
+   5. NOTIFICATION issues the tickets - only after the payment is committed.
+   6. ADMIN watches over users and events.
+
+For the same story with clickable, code-level detail per concept, see
+docs/08-learning-guide.md. For the request-by-request API view, see
+docs/04-request-flows.md. (This text file mirrors docs/11-how-each-part-works.md.)
+
+===============================================================================

@@ -1,0 +1,301 @@
+{
+  "info": {
+    "name": "Booking Platform API",
+    "description": "Event/ticket booking platform. Run the requests top-to-bottom: the login requests auto-save JWTs into collection variables, and the create requests auto-save ids (venueId, eventId, ticketTypeId, bookingId) so later requests chain automatically.\n\nGetting started:\n1. Start the app: `mvn spring-boot:run` (dev profile, http://localhost:8080).\n2. Run Auth > Register Organizer, then Login Organizer.\n3. Venues > Create Venue, Events > Create Event, Events > Publish Event.\n4. Auth > Register Attendee, Login Attendee.\n5. Bookings > Create Booking, then Pay Booking.\n\nAdmin requests need an ADMIN token. ADMIN cannot self-register (by design); seed one in the DB, then use Auth > Login Admin.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "organizerToken", "value": "" },
+    { "key": "attendeeToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "venueId", "value": "" },
+    { "key": "eventId", "value": "" },
+    { "key": "ticketTypeId", "value": "" },
+    { "key": "bookingId", "value": "" },
+    { "key": "startsAt", "value": "" },
+    { "key": "endsAt", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Keep event dates in the future so Create Event always validates.",
+          "const start = new Date(Date.now() + 7*24*3600*1000);",
+          "const end = new Date(start.getTime() + 3*3600*1000);",
+          "pm.collectionVariables.set('startsAt', start.toISOString());",
+          "pm.collectionVariables.set('endsAt', end.toISOString());"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Organizer",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api","auth","register"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"org@x.com\",\n  \"password\": \"password1\",\n  \"displayName\": \"Organizer\",\n  \"role\": \"ORGANIZER\"\n}" }
+          }
+        },
+        {
+          "name": "Login Organizer",
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "if (pm.response.code === 200) { pm.collectionVariables.set('organizerToken', pm.response.json().accessToken); }",
+            "pm.test('got token', () => pm.expect(pm.collectionVariables.get('organizerToken')).to.be.a('string').and.not.empty);"
+          ] } } ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"org@x.com\",\n  \"password\": \"password1\"\n}" }
+          }
+        },
+        {
+          "name": "Register Attendee",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api","auth","register"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"att@x.com\",\n  \"password\": \"password1\",\n  \"displayName\": \"Attendee\",\n  \"role\": \"ATTENDEE\"\n}" }
+          }
+        },
+        {
+          "name": "Login Attendee",
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "if (pm.response.code === 200) { pm.collectionVariables.set('attendeeToken', pm.response.json().accessToken); }",
+            "pm.test('got token', () => pm.expect(pm.collectionVariables.get('attendeeToken')).to.be.a('string').and.not.empty);"
+          ] } } ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"att@x.com\",\n  \"password\": \"password1\"\n}" }
+          }
+        },
+        {
+          "name": "Login Admin (seed an ADMIN first)",
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "if (pm.response.code === 200) { pm.collectionVariables.set('adminToken', pm.response.json().accessToken); }"
+          ] } } ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@x.com\",\n  \"password\": \"password1\"\n}" },
+            "description": "ADMIN cannot self-register. On the dev profile a default admin is auto-seeded on startup: admin@x.com / password1 (see config/DevDataInitializer.java). This request already uses those credentials, so it works out of the box in dev."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{organizerToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/users/me", "host": ["{{baseUrl}}"], "path": ["api","users","me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Venues",
+      "item": [
+        {
+          "name": "List Venues (public)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/venues", "host": ["{{baseUrl}}"], "path": ["api","venues"] } }
+        },
+        {
+          "name": "Get Venue (public)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/venues/{{venueId}}", "host": ["{{baseUrl}}"], "path": ["api","venues","{{venueId}}"] } }
+        },
+        {
+          "name": "Create Venue (ORGANIZER)",
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "if (pm.response.code === 201) { pm.collectionVariables.set('venueId', pm.response.json().id); }",
+            "pm.test('201 Created', () => pm.response.to.have.status(201));"
+          ] } } ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{organizerToken}}", "type": "string" } ] },
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/venues", "host": ["{{baseUrl}}"], "path": ["api","venues"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Main Hall\",\n  \"address\": \"1 Road\",\n  \"city\": \"Metropolis\",\n  \"capacity\": 100\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "List Published (public, cached)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/events", "host": ["{{baseUrl}}"], "path": ["api","events"] } }
+        },
+        {
+          "name": "Get Event (public)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["api","events","{{eventId}}"] } }
+        },
+        {
+          "name": "Create Event (ORGANIZER)",
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "if (pm.response.code === 201) {",
+            "  const j = pm.response.json();",
+            "  pm.collectionVariables.set('eventId', j.id);",
+            "  if (j.ticketTypes && j.ticketTypes.length) pm.collectionVariables.set('ticketTypeId', j.ticketTypes[0].id);",
+            "}",
+            "pm.test('201 Created', () => pm.response.to.have.status(201));"
+          ] } } ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{organizerToken}}", "type": "string" } ] },
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/events", "host": ["{{baseUrl}}"], "path": ["api","events"] },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Concert\",\n  \"description\": \"Live show\",\n  \"venueId\": {{venueId}},\n  \"startsAt\": \"{{startsAt}}\",\n  \"endsAt\": \"{{endsAt}}\",\n  \"ticketTypes\": [\n    { \"name\": \"General\", \"priceCents\": 5000, \"currency\": \"USD\", \"quantityTotal\": 80 },\n    { \"name\": \"VIP\", \"priceCents\": 15000, \"currency\": \"USD\", \"quantityTotal\": 20 }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "Publish Event (ORGANIZER)",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{organizerToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/publish", "host": ["{{baseUrl}}"], "path": ["api","events","{{eventId}}","publish"] }
+          }
+        },
+        {
+          "name": "Cancel Event (ORGANIZER)",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{organizerToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/events/{{eventId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api","events","{{eventId}}","cancel"] }
+          }
+        },
+        {
+          "name": "My Events (ORGANIZER)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{organizerToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/events/mine", "host": ["{{baseUrl}}"], "path": ["api","events","mine"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create Booking (ATTENDEE)",
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "if (pm.response.code === 201) { pm.collectionVariables.set('bookingId', pm.response.json().id); }",
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.test('PENDING', () => pm.expect(pm.response.json().status).to.eql('PENDING'));"
+          ] } } ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{attendeeToken}}", "type": "string" } ] },
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/bookings", "host": ["{{baseUrl}}"], "path": ["api","bookings"] },
+            "body": { "mode": "raw", "raw": "{\n  \"eventId\": {{eventId}},\n  \"items\": [\n    { \"ticketTypeId\": {{ticketTypeId}}, \"quantity\": 2 }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "List My Bookings (ATTENDEE)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{attendeeToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/bookings", "host": ["{{baseUrl}}"], "path": ["api","bookings"] }
+          }
+        },
+        {
+          "name": "Get Booking (ATTENDEE)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{attendeeToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/bookings/{{bookingId}}", "host": ["{{baseUrl}}"], "path": ["api","bookings","{{bookingId}}"] }
+          }
+        },
+        {
+          "name": "Pay Booking (ATTENDEE)",
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('PAID', () => pm.expect(pm.response.json().status).to.eql('PAID'));"
+          ] } } ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{attendeeToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/bookings/{{bookingId}}/pay", "host": ["{{baseUrl}}"], "path": ["api","bookings","{{bookingId}}","pay"] }
+          }
+        },
+        {
+          "name": "Cancel Booking (ATTENDEE)",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{attendeeToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/bookings/{{bookingId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api","bookings","{{bookingId}}","cancel"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List Users (ADMIN)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{adminToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/admin/users", "host": ["{{baseUrl}}"], "path": ["api","admin","users"] }
+          }
+        },
+        {
+          "name": "Disable User (ADMIN)",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{adminToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/admin/users/1/disable", "host": ["{{baseUrl}}"], "path": ["api","admin","users","1","disable"] }
+          }
+        },
+        {
+          "name": "Enable User (ADMIN)",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{adminToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/admin/users/1/enable", "host": ["{{baseUrl}}"], "path": ["api","admin","users","1","enable"] }
+          }
+        },
+        {
+          "name": "Force-Cancel Event (ADMIN)",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{adminToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/api/admin/events/{{eventId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api","admin","events","{{eventId}}","cancel"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ops (public)",
+      "item": [
+        { "name": "Ping", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/ping", "host": ["{{baseUrl}}"], "path": ["api","ping"] } } },
+        { "name": "Health", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator","health"] } } },
+        { "name": "Info", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/actuator/info", "host": ["{{baseUrl}}"], "path": ["actuator","info"] } } },
+        {
+          "name": "Metrics (ADMIN)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{adminToken}}", "type": "string" } ] },
+            "url": { "raw": "{{baseUrl}}/actuator/metrics", "host": ["{{baseUrl}}"], "path": ["actuator","metrics"] }
+          }
+        }
+      ]
+    }
+  ]
+}

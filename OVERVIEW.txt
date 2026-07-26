@@ -1,0 +1,105 @@
+===============================================================================
+ BOOKING PLATFORM - PROJECT OVERVIEW
+===============================================================================
+
+A working event/ticket booking platform built with Spring Boot (Java 21).
+Users register and log in, organizers create events at venues with priced
+ticket types, attendees book seats (seats are HELD and expire if unpaid), and
+payment is faked behind a clean interface. Admins can moderate users/events.
+
+Build status: `mvn install` -> BUILD SUCCESS. 16 unit tests pass. An executable
+jar is produced at: target/booking-platform-0.0.1-SNAPSHOT.jar
+
+
+-------------------------------------------------------------------------------
+ WHAT THIS PROJECT CONTAINS
+-------------------------------------------------------------------------------
+
+1. THE APPLICATION (Java / Spring Boot source)
+   - Organized "package-by-feature" under:
+       src/main/java/com/example/booking/
+   - Features: user, security, venue, event, booking, payment, notification,
+     admin, common (errors), config, ping.
+
+2. REST API
+   - JWT authentication with roles: ATTENDEE, ORGANIZER, ADMIN.
+   - Endpoints for auth, users, venues, events, bookings, admin, and health.
+   - Errors returned in the standard RFC 7807 "ProblemDetail" JSON format.
+
+3. SWAGGER / OPENAPI DOCUMENTATION  (auto-generated from the code)
+   - Interactive Swagger UI (when the app is running):
+       http://localhost:8080/swagger-ui.html
+   - Live OpenAPI document:
+       http://localhost:8080/v3/api-docs       (JSON)
+       http://localhost:8080/v3/api-docs.yaml   (YAML)
+   - Exported copies saved as files:
+       docs/openapi.json
+       docs/openapi.yaml
+
+4. POSTMAN COLLECTION  (ready to import and run)
+       docs/booking-platform.postman_collection.json
+   - Login requests auto-save the JWT; create requests auto-save ids, so the
+     requests chain together. Just import and run top-to-bottom.
+
+5. DATABASE
+   - Dev profile: in-memory H2 (zero setup, schema auto-created).
+   - Postgres profile: real PostgreSQL with Flyway migrations
+       src/main/resources/db/migration/V1__core_schema.sql
+       src/main/resources/db/migration/V2__booking_schema.sql
+   - Local Postgres helper: docker-compose.yml
+
+6. TESTS
+   - Unit tests (run in the normal build)      -> src/test/... *Test.java
+   - Integration test (Testcontainers Postgres,
+     skipped unless Docker is available)       -> src/test/.../BookingFlowIT.java
+
+7. DOCUMENTATION  (the docs/ folder - start here to understand everything)
+   - docs/README.md ................ index / reading order
+   - docs/08-learning-guide.md ..... EVERY concept explained simply + which
+                                     file it lives in (best place to start)
+   - docs/01-decisions-and-permissions.md ... decisions, permissions, setup notes
+   - docs/02-architecture.md ....... how the whole system fits together
+   - docs/03-file-guide.md ......... what every file does
+   - docs/04-request-flows.md ...... step-by-step walkthroughs
+   - docs/05-api-reference.md ...... endpoint reference
+   - docs/06-shipping.md ........... build / run / ship instructions
+   - docs/07-glossary-and-faq.md ... terms + "why did you do X" + known gaps
+   - docs/09-api-docs-and-postman.md  how to use Swagger + Postman
+   - docs/10-what-is-swagger.md ..... what Swagger is and how it's generated
+
+8. README.md  (quick-start at the project root)
+
+
+-------------------------------------------------------------------------------
+ KEY TECHNICAL CONCEPTS INCLUDED
+-------------------------------------------------------------------------------
+   - JWT authentication + role-based and method-level security
+   - Bean Validation on incoming request data
+   - JPA/Hibernate entities and relationships (Spring Data repositories)
+   - Seat holds with OPTIMISTIC LOCKING (@Version) to prevent overselling
+   - Stubbed payment behind an interface (swap-in-a-real-one-later design)
+   - Caffeine caching on the public event-listing (with cache eviction)
+   - Scheduled jobs: expire stale holds, send reminders
+   - After-commit domain events for ticket issuance
+   - Flyway database migrations; ddl-auto=validate on Postgres
+   - RFC 7807 ProblemDetail error handling
+   - Actuator health/info/metrics endpoints
+   - Swagger/OpenAPI auto-generated docs
+
+
+-------------------------------------------------------------------------------
+ HOW TO RUN (quick)
+-------------------------------------------------------------------------------
+   Build + test + package:      mvn install
+   Run (dev, H2, no setup):     mvn spring-boot:run
+   Then open:                   http://localhost:8080/swagger-ui.html
+   Health check:                http://localhost:8080/actuator/health
+   Ping:                        http://localhost:8080/api/ping
+
+   Run with real Postgres:      docker compose up -d
+                                SPRING_PROFILES_ACTIVE=postgres mvn spring-boot:run
+
+   Run integration tests
+   (needs Docker):              mvn verify -DskipITs=false
+
+===============================================================================

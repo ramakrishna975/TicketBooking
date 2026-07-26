@@ -1,0 +1,211 @@
+===============================================================================
+ BOOKING PLATFORM - SETUP GUIDE (run it in IntelliJ)
+===============================================================================
+
+Hi! This guide walks you through running this Spring Boot app on your own laptop
+in IntelliJ, step by step. No database setup is needed for the default mode - it
+uses a built-in in-memory database. Just follow the steps in order.
+
+Estimated time: ~15 minutes (most of it is the one-time installs).
+
+
+-------------------------------------------------------------------------------
+ STEP 0 - WHAT YOU NEED TO INSTALL (one time)
+-------------------------------------------------------------------------------
+ 1) Java Development Kit (JDK) 21
+      - Recommended: "Eclipse Temurin 21" from https://adoptium.net
+      - (Newer JDKs like 22/23/25 also work, but 21 is the smoothest.)
+
+ 2) IntelliJ IDEA (the free "Community Edition" is enough)
+      - https://www.jetbrains.com/idea/download
+
+ 3) (Optional) Postman - only if you want to test the APIs with clicks
+      - https://www.postman.com/downloads
+
+ You do NOT need to install Maven separately - IntelliJ brings its own.
+ You do NOT need Docker or any database for the default run.
+
+
+-------------------------------------------------------------------------------
+ STEP 1 - GET THE PROJECT ONTO YOUR LAPTOP
+-------------------------------------------------------------------------------
+ - If you received a ZIP file: unzip it somewhere simple, e.g. your Desktop.
+   You should end up with a folder named "project" that contains a file called
+   "pom.xml" and a "src" folder inside it.
+ - Remember where this folder is - you will open it in IntelliJ next.
+
+
+-------------------------------------------------------------------------------
+ STEP 2 - OPEN THE PROJECT IN INTELLIJ
+-------------------------------------------------------------------------------
+ 1) Start IntelliJ IDEA.
+ 2) Click  File > Open   (or "Open" on the welcome screen).
+ 3) Navigate INTO the project folder and select the file named  pom.xml
+    (or select the "project" folder itself). Click Open.
+ 4) If IntelliJ asks, choose "Open as Project" and "Trust Project".
+ 5) Wait a minute. IntelliJ will read pom.xml and DOWNLOAD the libraries the app
+    needs. You will see a progress bar at the bottom. Let it finish.
+    (This needs internet the first time only.)
+
+
+-------------------------------------------------------------------------------
+ STEP 3 - POINT INTELLIJ AT JAVA 21
+-------------------------------------------------------------------------------
+ 1) Open  File > Project Structure > Project.
+ 2) For "SDK", pick your installed JDK 21. (If it is not listed, click
+    "Add SDK > Download JDK", choose version 21 / vendor Temurin, and download.)
+ 3) Set "Language level" to 21 as well. Click OK.
+
+
+-------------------------------------------------------------------------------
+ STEP 4 - TURN ON LOMBOK SUPPORT (important, or the code shows red errors)
+-------------------------------------------------------------------------------
+ This project uses a helper library called "Lombok". IntelliJ needs two things:
+
+ 1) The Lombok plugin:
+      - Open  Settings/Preferences > Plugins > Marketplace,
+        search "Lombok", install it (recent IntelliJ versions already include it),
+        and restart if asked.
+
+ 2) Annotation processing turned ON:
+      - Open  Settings/Preferences > Build, Execution, Deployment >
+        Compiler > Annotation Processors
+      - Tick "Enable annotation processing". Click OK.
+
+ (If class code looks full of red errors like "cannot find method getName()",
+  it is almost always these two settings. Fix them and the red goes away.)
+
+
+-------------------------------------------------------------------------------
+ STEP 5 - RUN THE APP  (pick ANY one of these three ways)
+-------------------------------------------------------------------------------
+ WAY A - the simplest (click the green Run arrow):
+   1) In the left "Project" panel, open:
+        src > main > java > com.example.booking > BookingApplication
+   2) Click the little green triangle next to "public class BookingApplication"
+      (or next to the main method) and choose "Run 'BookingApplication'".
+
+ WAY B - using the Maven panel:
+   1) Open the "Maven" tab on the right edge of IntelliJ.
+   2) Expand  booking-platform > Plugins > spring-boot  and double-click
+      "spring-boot:run".
+
+ WAY C - using the built-in Terminal (bottom of IntelliJ):
+        ./mvnw spring-boot:run       (Mac/Linux)
+        mvnw.cmd spring-boot:run     (Windows)
+      or just:  mvn spring-boot:run  (if you have Maven installed)
+
+ SUCCESS looks like: the console prints a big "Spring" banner and ends with a
+ line similar to:
+        Started BookingApplication in 3.2 seconds
+ The app is now running on your computer at  http://localhost:8080
+
+
+-------------------------------------------------------------------------------
+ STEP 6 - CHECK IT IS WORKING (in your web browser)
+-------------------------------------------------------------------------------
+ Open these links while the app is running:
+
+   http://localhost:8080/api/ping
+       -> should show: {"status":"ok","time":"..."}
+
+   http://localhost:8080/actuator/health
+       -> should show: {"status":"UP"}
+
+   http://localhost:8080/swagger-ui.html
+       -> the interactive API page where you can try every endpoint
+
+
+-------------------------------------------------------------------------------
+ STEP 7 - TRY THE APP (using the Swagger page from Step 6)
+-------------------------------------------------------------------------------
+ A ready-made ADMIN account already exists in this mode:
+        email:    admin@x.com
+        password: password1
+
+ A quick tour on the Swagger page (http://localhost:8080/swagger-ui.html):
+   1) Open "auth-controller" > POST /api/auth/register > "Try it out".
+      Paste this and click Execute to create an organizer:
+        {
+          "email": "org@x.com",
+          "password": "password1",
+          "displayName": "Organizer",
+          "role": "ORGANIZER"
+        }
+      (Note: "role" must be ATTENDEE, ORGANIZER, or ADMIN.)
+   2) POST /api/auth/login with the same email/password -> copy the
+      "accessToken" from the response.
+   3) Click the green "Authorize" button (top right), paste the token, Authorize.
+   4) Now you can call the protected endpoints: create a venue, create an event,
+      publish it, register an attendee, book, and pay.
+
+ Prefer Postman? See STEP 8.
+
+
+-------------------------------------------------------------------------------
+ STEP 8 - (OPTIONAL) USE THE POSTMAN COLLECTION
+-------------------------------------------------------------------------------
+ 1) Open Postman > Import.
+ 2) Choose the file:  docs/booking-platform.postman_collection.json
+ 3) Run the requests top to bottom. The login requests automatically save your
+    token, and the create requests save ids, so everything chains together.
+    (Admin requests use admin@x.com / password1, already set up.)
+
+
+-------------------------------------------------------------------------------
+ STEP 9 - STOP THE APP
+-------------------------------------------------------------------------------
+ Click the red square "Stop" button in IntelliJ's Run panel (bottom).
+ (Or press Ctrl+C if you started it from the Terminal.)
+
+
+-------------------------------------------------------------------------------
+ TROUBLESHOOTING (common issues and fixes)
+-------------------------------------------------------------------------------
+ * Red errors like "cannot find symbol getXxx()" / "builder()":
+     -> Lombok is not set up. Redo STEP 4 (plugin + annotation processing),
+        then  Build > Rebuild Project.
+
+ * "Port 8080 was already in use":
+     -> Another app is using that port. Either stop it, or change the port:
+        open  src/main/resources/application.yml  and add at the top:
+            server:
+              port: 8081
+        then use http://localhost:8081 instead.
+
+ * Build fails mentioning Java version / "release 21 not supported":
+     -> Your JDK is older than 21. Install JDK 21 (STEP 0) and set it in STEP 3.
+
+ * Libraries won't download / build hangs on first open:
+     -> Check your internet connection (a company proxy/VPN can block it). The
+        very first build needs to download dependencies; after that it works
+        offline.
+
+ * The code compiles but you want a clean rebuild:
+     -> In the Terminal:  ./mvnw clean install   (Mac/Linux)
+                          mvnw.cmd clean install  (Windows)
+
+ * Want to run against a REAL PostgreSQL instead of the built-in database?
+     -> That is optional and only if you have Docker. In the Terminal:
+            docker compose up -d
+        then run with the "postgres" profile, e.g. edit application.yml's
+        "spring.profiles.default" to "postgres", or run:
+            mvn spring-boot:run -Dspring-boot.run.profiles=postgres
+        (The default in-memory mode is perfectly fine for trying the app.)
+
+
+-------------------------------------------------------------------------------
+ WANT TO UNDERSTAND THE CODE?
+-------------------------------------------------------------------------------
+ - Start with the folder  docs/  - open  docs/README.md  for a guided tour.
+ - docs/08-learning-guide.md explains every concept in simple words and points
+   to the exact file for each.
+ - docs/11-how-each-part-works.md explains each feature (users, events, bookings,
+   payment...) in plain language.
+ - Every code file has comments at the BOTTOM explaining what it does - first a
+   technical summary, then an "IN SIMPLE WORDS (for a fresher)" explanation.
+ - HOW-IT-WORKS.txt and OVERVIEW.txt (in this same folder) are quick plain-text
+   summaries.
+
+ Have fun! Everything you need is in this folder.
+===============================================================================

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java -version)",
+      "Bash(mvn -version)",
+      "Bash(docker info *)",
+      "Bash(mvn -q clean compile)",
+      "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:org.projectlombok+AND+a:lombok&core=gav&rows=20&wt=json\")",
+      "Bash(mvn -q test)",
+      "Bash(mvn -q clean test)",
+      "Bash(mvn test *)",
+      "Bash(mvn clean *)",
+      "Bash(grep -E \"^\\\\[INFO\\\\] \\(---|Tests run|BUILD|Building|Total time|Finished|Replacing|Installing|Building jar|Results|-{5,}\\)|BUILD \\(SUCCESS|FAILURE\\)|Tests are skipped\")",
+      "Bash(awk -F/ '{ *)"
+    ]
+  }
+}
