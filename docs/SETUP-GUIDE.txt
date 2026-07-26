@@ -211,9 +211,9 @@ Estimated time: ~15 minutes (most of it is the one-time installs).
  WANT TO UNDERSTAND THE CODE?
 -------------------------------------------------------------------------------
  - You are in the  docs/  folder - open  README.md  here for a guided tour.
- - 08-learning-guide.md explains every concept in simple words and points
+ - md/08-learning-guide.md explains every concept in simple words and points
    to the exact file for each.
- - 11-how-each-part-works.md explains each feature (users, events, bookings,
+ - md/11-how-each-part-works.md explains each feature (users, events, bookings,
    payment...) in plain language.
  - Every code file has comments at the BOTTOM explaining what it does - first a
    technical summary, then an "IN SIMPLE WORDS (for a fresher)" explanation.

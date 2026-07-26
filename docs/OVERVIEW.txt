@@ -55,17 +55,17 @@ jar is produced at: target/booking-platform-0.0.1-SNAPSHOT.jar
 
 7. DOCUMENTATION  (all in this docs/ folder - start here to understand everything)
    - README.md ................ index / reading order (this docs/ folder)
-   - 08-learning-guide.md ..... EVERY concept explained simply + which
+   - md/08-learning-guide.md ..... EVERY concept explained simply + which
                                      file it lives in (best place to start)
-   - 01-decisions-and-permissions.md ... decisions, permissions, setup notes
-   - 02-architecture.md ....... how the whole system fits together
-   - 03-file-guide.md ......... what every file does
-   - 04-request-flows.md ...... step-by-step walkthroughs
-   - 05-api-reference.md ...... endpoint reference
-   - 06-shipping.md ........... build / run / ship instructions
-   - 07-glossary-and-faq.md ... terms + "why did you do X" + known gaps
-   - 09-api-docs-and-postman.md  how to use Swagger + Postman
-   - 10-what-is-swagger.md ..... what Swagger is and how it's generated
+   - md/01-decisions-and-permissions.md ... decisions, permissions, setup notes
+   - md/02-architecture.md ....... how the whole system fits together
+   - md/03-file-guide.md ......... what every file does
+   - md/04-request-flows.md ...... step-by-step walkthroughs
+   - md/05-api-reference.md ...... endpoint reference
+   - md/06-shipping.md ........... build / run / ship instructions
+   - md/07-glossary-and-faq.md ... terms + "why did you do X" + known gaps
+   - md/09-api-docs-and-postman.md  how to use Swagger + Postman
+   - md/10-what-is-swagger.md ..... what Swagger is and how it's generated
 
 8. ../README.md  (quick-start at the project root)
 

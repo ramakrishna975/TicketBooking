@@ -429,7 +429,7 @@ Relationships in words:
  8. THE FEATURES, ONE BY ONE
 ===============================================================================
 (Each feature is also documented at the bottom of its own code files, and in
-11-how-each-part-works.md.)
+md/11-how-each-part-works.md.)
 
 USER - accounts and who you are
   Register with email + password and a role (ATTENDEE or ORGANIZER; ADMIN cannot
@@ -625,7 +625,7 @@ booking) are checked in the services.
     POST /api/admin/users/{id}/enable      enable a user
     POST /api/admin/events/{id}/cancel     force-cancel any event
 
-Full request/response shapes: see 05-api-reference.md, or the live Swagger
+Full request/response shapes: see md/05-api-reference.md, or the live Swagger
 page at /swagger-ui.html.
 
 
@@ -682,7 +682,7 @@ page at /swagger-ui.html.
 ===============================================================================
  20. FILE-BY-FILE REFERENCE
 ===============================================================================
-For a complete list of what every file does, see 03-file-guide.md. In
+For a complete list of what every file does, see md/03-file-guide.md. In
 addition, EVERY code file has explanation comments at the BOTTOM of the file:
 first a technical summary, then an "IN SIMPLE WORDS (for a fresher)" section.
 
@@ -737,8 +737,8 @@ does NOT include:
 
 Each of these is a natural next step. Because payment and notifications sit behind
 clean interfaces/seams, adding the real versions later does not require changing
-the booking logic. More detail is in 06-shipping.md (section 6.8) and
-07-glossary-and-faq.md (section 7.3).
+the booking logic. More detail is in md/06-shipping.md (section 6.8) and
+md/07-glossary-and-faq.md (section 7.3).
 
 ###############################################################################
 #  End of document. For more, see the other files in this docs/ folder      #

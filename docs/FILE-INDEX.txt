@@ -1,0 +1,179 @@
+===============================================================================
+ FILE INDEX  -  what every documentation file is for
+===============================================================================
+A quick map of all the .txt and .md files in this project, and what each one
+does, so you know which to open. Paths are shown relative to the project root.
+
+Legend:  [START HERE] = good entry points for a newcomer.
+
+
+###############################################################################
+ IF YOU ARE NEW HERE - READ IN THIS ORDER (a 7-step journey)
+###############################################################################
+ Follow these steps top to bottom. Each one builds on the last, going from
+ "just run it" to "understand every line".
+
+   STEP 1  RUN IT FIRST
+           -> docs/SETUP-GUIDE.txt
+           Set it up in IntelliJ and get it running. Seeing it work first makes
+           everything else easier to understand.
+
+   STEP 2  GET THE BIG PICTURE (5 minutes)
+           -> docs/OVERVIEW.txt        (what this project is and contains)
+           -> then README.md (root)     (the short intro)
+
+   STEP 3  SEE IT WORK / TRY IT
+           -> open http://localhost:8080/swagger-ui.html and click around,
+              OR import docs/booking-platform.postman_collection.json into Postman.
+           -> docs/md/09-api-docs-and-postman.md explains how.
+           -> docs/md/04-request-flows.md walks through register -> book -> pay.
+           (Admin login: admin@x.com / password1)
+
+   STEP 4  UNDERSTAND EACH FEATURE IN PLAIN WORDS
+           -> docs/HOW-IT-WORKS.txt
+           Users, security, venues, events, bookings, payment, notifications,
+           admin - each explained simply, then technically.
+
+   STEP 5  LEARN THE CODE, CONCEPT BY CONCEPT
+           -> docs/md/08-learning-guide.md
+           Every technical idea explained simply, each pointing to the exact file
+           to open. This is the best "learn the codebase" guide.
+
+   STEP 6  READ THE CODE ITSELF
+           -> Start with these files (each has plain-language comments at the
+              BOTTOM explaining it):
+                src/main/java/com/example/booking/BookingApplication.java
+                .../booking/BookingService.java        (the heart of the app)
+                .../security/SecurityConfig.java        (how login/roles work)
+                .../event/EventService.java             (caching + rules)
+                .../common/error/GlobalExceptionHandler.java (clean errors)
+           -> src/test/java/... has tests that read like examples of the rules.
+
+   STEP 7  GO DEEP / USE AS REFERENCE (whenever needed)
+           -> docs/PROJECT-DOCUMENTATION.txt  (EVERYTHING in one file, incl. the
+              config files and database explained line-by-line)
+           -> docs/md/02-architecture.md      (how it all fits together)
+           -> docs/md/05-api-reference.md     (every endpoint)
+           -> docs/md/03-file-guide.md        (what every file does)
+
+ Short on time? Do STEP 1 (run it), then read docs/PROJECT-DOCUMENTATION.txt -
+ that single file covers the whole project.
+###############################################################################
+
+
+-------------------------------------------------------------------------------
+ AT THE PROJECT ROOT
+-------------------------------------------------------------------------------
+ README.md
+     The GitHub landing page. Short intro + a "Quick Start" block (clone, open in
+     IntelliJ, run, admin login). Points you into the docs/ folder for details.
+     [START HERE] to just get it running.
+
+
+-------------------------------------------------------------------------------
+ IN docs/  (plain-text documents - easy to read, good for sharing)
+-------------------------------------------------------------------------------
+ docs/README.md
+     The documentation index / table of contents. Lists the numbered guides in
+     recommended reading order, plus a 30-second summary of the project.
+
+ docs/SETUP-GUIDE.txt
+     Step-by-step instructions to set up and RUN the app in IntelliJ (installs,
+     open the project, JDK 21, Lombok, run, verify in the browser, troubleshooting).
+     [START HERE] to run the app on a new machine.
+
+ docs/PROJECT-DOCUMENTATION.txt
+     The COMPLETE single-file document - the whole project in one long text file:
+     overview, tech stack, folder layout, the config files explained line-by-line,
+     the database and every table/column, all features, security, the APIs,
+     testing, build, glossary, and more. [START HERE] if you want everything in
+     one place.
+
+ docs/OVERVIEW.txt
+     A short summary of what the project contains (features, where Swagger/Postman
+     live, how to run). A one-page "what is this?".
+
+ docs/HOW-IT-WORKS.txt
+     Each feature (user, security, venue, event, booking, payment, notification,
+     admin) explained twice: "in plain words" for anyone, then "under the hood"
+     with the technical detail, plus which files implement it.
+
+ docs/FILE-INDEX.txt
+     THIS file - the map of what every document is for.
+
+
+-------------------------------------------------------------------------------
+ IN docs/md/  (the numbered guides, in Markdown)
+-------------------------------------------------------------------------------
+ docs/md/01-decisions-and-permissions.md
+     The choices made while building, the questions/permissions asked, and the
+     environment quirks (Docker off, Java version, Lombok fix).
+
+ docs/md/02-architecture.md
+     How the whole system fits together: the layers, package-by-feature layout,
+     the domain model, the security model, and how a request flows end-to-end.
+
+ docs/md/03-file-guide.md
+     Every code file, grouped by feature, with a short note on what it does.
+
+ docs/md/04-request-flows.md
+     Concrete walkthroughs: register -> login -> create event -> book -> pay,
+     the error cases and their status codes, and the background jobs.
+
+ docs/md/05-api-reference.md
+     Endpoint-by-endpoint API reference: roles, request/response shapes, status
+     codes, and a quick cURL smoke test.
+
+ docs/md/06-shipping.md
+     How to build, run, test, and ship: dev vs Postgres, the packaged jar, config
+     reference, a CI recipe, and what "productionizing" would add.
+
+ docs/md/07-glossary-and-faq.md
+     Plain-language glossary, "why did you do X" answers, and the list of things
+     intentionally left out (scope).
+
+ docs/md/08-learning-guide.md
+     [START HERE to LEARN the code] Every technical concept explained simply, each
+     with the exact file to open and see it in real code.
+
+ docs/md/09-api-docs-and-postman.md
+     How to use Swagger UI and the Postman collection; where the exported OpenAPI
+     document lives.
+
+ docs/md/10-what-is-swagger.md
+     What Swagger/OpenAPI is, how the dependency auto-generates it from the code,
+     and what it is useful for.
+
+ docs/md/11-how-each-part-works.md
+     Feature-by-feature walkthrough (client-friendly "plain words" + "under the
+     hood" technical detail + which files). The Markdown twin of HOW-IT-WORKS.txt.
+
+
+-------------------------------------------------------------------------------
+ OTHER GENERATED FILES IN docs/  (not .md/.txt, but useful)
+-------------------------------------------------------------------------------
+ docs/openapi.json  /  docs/openapi.yaml
+     The API description auto-generated from the code (OpenAPI format). Import into
+     tools, or view it live at http://localhost:8080/v3/api-docs while running.
+
+ docs/booking-platform.postman_collection.json
+     A ready-to-import Postman collection. Login requests auto-save the token and
+     create requests auto-save ids, so the whole flow chains together.
+
+
+-------------------------------------------------------------------------------
+ WHERE THE CODE IS ALSO DOCUMENTED
+-------------------------------------------------------------------------------
+ Every source file under  src/main/java/  has explanation comments at the BOTTOM
+ of the file: first a technical summary, then an "IN SIMPLE WORDS (for a fresher)"
+ section. So you can also learn just by opening a file and scrolling down.
+
+
+-------------------------------------------------------------------------------
+ SUGGESTED STARTING POINTS
+-------------------------------------------------------------------------------
+   - Just run it            -> docs/SETUP-GUIDE.txt
+   - Understand everything  -> docs/PROJECT-DOCUMENTATION.txt
+   - Learn the code         -> docs/md/08-learning-guide.md
+   - Quick overview         -> docs/OVERVIEW.txt  (or README.md at the root)
+===============================================================================
