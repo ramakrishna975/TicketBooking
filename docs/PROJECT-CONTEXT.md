@@ -1,3 +1,5 @@
+# @SRIJA - IGNORE THIS FILE, this is for Claude.
+
 # PROJECT CONTEXT — read this first (for future work / AI assistance)
 
 > **Purpose of this file.** This is a self-contained context brief. If you come back
