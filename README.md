@@ -2,6 +2,26 @@
 
 Event/ticket booking platform built with Spring Boot 3.4 (Java 21), package-by-feature.
 
+## 🚀 Quick Start (first-time setup)
+
+```bash
+git clone https://github.com/ramakrishna975/TicketBooking.git
+```
+
+Then open the project's **`pom.xml`** in IntelliJ IDEA and run it. Full step-by-step
+instructions are in **[`SETUP-GUIDE.txt`](SETUP-GUIDE.txt)**.
+
+- **Runs at:** http://localhost:8080/swagger-ui.html (interactive API page)
+- **Set once (both explained in the guide):** use **JDK 21** as the project SDK, and
+  enable **Lombok** (install the plugin + tick *Build → Compiler → Annotation Processors →
+  Enable annotation processing*) — otherwise the code shows red errors.
+- **Seeded admin login:** `admin@x.com` / `password1`
+- No Maven, database, or Docker needed for the default run — the Maven wrapper (`./mvnw`)
+  and an in-memory H2 database handle everything.
+
+New to the code? Start with **[`docs/README.md`](docs/README.md)** → then
+`docs/08-learning-guide.md`. Every source file also has plain-language comments at the bottom.
+
 ## Run
 
 ```bash
