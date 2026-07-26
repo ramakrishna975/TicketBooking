@@ -1,0 +1,746 @@
+###############################################################################
+#                                                                             #
+#            BOOKING PLATFORM  -  COMPLETE PROJECT DOCUMENTATION               #
+#                                                                             #
+#   One file that explains the whole project: what it is, how to run it,      #
+#   how every part works, the configuration files line-by-line, the           #
+#   database, the APIs, security, testing, and more.                          #
+#                                                                             #
+#   Written to be readable by beginners AND useful to developers.             #
+#   It is long on purpose - use the TABLE OF CONTENTS to jump around.         #
+#                                                                             #
+###############################################################################
+
+
+===============================================================================
+ TABLE OF CONTENTS
+===============================================================================
+   1.  What this project is (in plain words)
+   2.  The technology stack
+   3.  How to get it and run it (quick)
+   4.  How the app is organized (folders / package-by-feature)
+   5.  How a request flows through the app (the layers)
+   6.  CONFIGURATION FILES EXPLAINED LINE-BY-LINE
+         6.1  application.yml        (shared settings)
+         6.2  application-dev.yml     (H2 / local mode)
+         6.3  application-postgres.yml(PostgreSQL / real mode)
+         6.4  How "profiles" pick which settings apply
+   7.  THE DATABASE, IN DETAIL
+         7.1  H2 vs PostgreSQL - what, why, when
+         7.2  Flyway migrations (the SQL files)
+         7.3  Every table and column
+   8.  The features, one by one
+         (user, security, venue, event, booking, payment, notification, admin)
+   9.  Security model (login, tokens, roles)
+   10. Seat holds & preventing double-selling (optimistic locking)
+   11. Caching (why and where)
+   12. Scheduled background jobs
+   13. In-process events (after-commit ticket issuance)
+   14. Error handling (RFC 7807)
+   15. Input validation
+   16. The REST API - every endpoint
+   17. Testing (unit + integration)
+   18. Building & packaging (Maven, profiles, the wrapper)
+   19. Swagger / OpenAPI and the Postman collection
+   20. File-by-file reference
+   21. Glossary of terms
+   22. What is intentionally NOT included (scope & next steps)
+
+
+===============================================================================
+ 1. WHAT THIS PROJECT IS (in plain words)
+===============================================================================
+An event / ticket booking platform - like a small version of a concert-ticket
+website. Three kinds of people use it:
+
+  - ATTENDEE  : a fan. Browses events and books tickets.
+  - ORGANIZER : a promoter. Creates venues and events, sets ticket prices and
+                quantities, publishes them for sale.
+  - ADMIN     : staff. Moderates users and events.
+
+The core idea: when an attendee books, the seats are HELD for a short time
+(15 minutes). If they pay in time, the tickets are theirs; if not, the hold
+expires and the seats go back on sale. Payment is faked (no real bank) but is
+built behind a clean boundary so a real payment company can be added later.
+
+It is a backend REST API (no web pages of its own). You talk to it with tools
+like Swagger UI or Postman, or from a separate front-end app.
+
+
+===============================================================================
+ 2. THE TECHNOLOGY STACK
+===============================================================================
+  - Language : Java 21
+  - Framework: Spring Boot 3.4 (Spring Web, Spring Data JPA, Spring Security)
+  - Build    : Maven (a Maven "wrapper" is included, so Maven need not be
+               installed - use ./mvnw)
+  - Database : H2 (in-memory) for local/dev; PostgreSQL for real mode
+  - Schema   : Flyway migrations (for PostgreSQL)
+  - Auth     : JWT (JSON Web Tokens), HS256 signed
+  - Caching  : Caffeine (in-memory cache)
+  - Docs     : springdoc-openapi (Swagger UI)
+  - Helpers  : Lombok (removes boilerplate on entities), Java records (for DTOs)
+  - Tests    : JUnit 5, Mockito (unit), Testcontainers (integration)
+
+
+===============================================================================
+ 3. HOW TO GET IT AND RUN IT (quick)
+===============================================================================
+Full beginner steps are in SETUP-GUIDE.txt. In short:
+
+  1) Install JDK 21 and IntelliJ IDEA.
+  2) git clone https://github.com/ramakrishna975/TicketBooking.git
+  3) Open the TicketBooking folder's pom.xml in IntelliJ.
+  4) Set the project SDK to Java 21; enable Lombok (plugin + annotation
+     processing) - otherwise the code shows red errors.
+  5) Run the class  com.example.booking.BookingApplication
+     (or in a terminal:  ./mvnw spring-boot:run )
+  6) Open http://localhost:8080/swagger-ui.html
+
+Default mode uses the in-memory H2 database, so NO database or Docker setup is
+needed. A ready-made admin exists in this mode: admin@x.com / password1.
+
+
+===============================================================================
+ 4. HOW THE APP IS ORGANIZED (package-by-feature)
+===============================================================================
+Instead of grouping code by technical type (all controllers together, all
+services together), everything about ONE feature lives in ONE folder. Change how
+"bookings" work -> you touch the booking/ folder.
+
+  src/main/java/com/example/booking/
+    BookingApplication.java     <- the "power button" that starts everything
+    user/            accounts, roles, register/login, profile
+    security/        JWT login, the request checkpoint, access rules
+    venue/           places where events happen
+    event/           events + ticket types (the sellable inventory)
+    booking/         the core: bookings, seat holds, payment step, lifecycle
+    payment/         the stubbed payment gateway (behind an interface)
+    notification/    stubbed "issue tickets / send reminder" (logs for now)
+    admin/           moderation endpoints (admin only)
+    common/error/    turns errors into clean JSON responses
+    config/          app-wide settings, cache, API docs, dev admin seeder
+    ping/            a tiny "is it alive?" endpoint
+
+  src/main/resources/
+    application.yml            shared settings
+    application-dev.yml        H2 (default) settings
+    application-postgres.yml   PostgreSQL settings
+    db/migration/              Flyway SQL files (V1, V2) for PostgreSQL
+
+  src/test/java/...            unit tests (*Test) + one integration test (*IT)
+
+
+===============================================================================
+ 5. HOW A REQUEST FLOWS THROUGH THE APP (the layers)
+===============================================================================
+Almost every request travels through three layers:
+
+  Browser/App  --HTTP-->  CONTROLLER  -->  SERVICE  -->  REPOSITORY  -->  DATABASE
+                          (front desk)     (the brain)   (the librarian)
+
+  - CONTROLLER: receives the request, checks basic permissions, converts data.
+                It holds NO business rules.
+  - SERVICE   : the real logic and rules ("you can't book an unpublished event").
+                It manages database transactions.
+  - REPOSITORY: talks to the database (save / find). You mostly just declare
+                method names and Spring writes the query.
+
+Data comes in and goes out as DTOs (small data shapes / Java records), never as
+raw database objects - this keeps internal details (like password hashes) safe
+and the API stable.
+
+Before reaching the controller, every request passes a SECURITY CHECKPOINT (a
+filter) that reads your login token and figures out who you are.
+
+
+===============================================================================
+ 6. CONFIGURATION FILES EXPLAINED LINE-BY-LINE
+===============================================================================
+"Configuration" = settings the app reads at startup, written in YAML files under
+src/main/resources/. YAML uses indentation to show grouping (like an outline).
+
+There are three files:
+  - application.yml           : settings that apply ALWAYS
+  - application-dev.yml        : extra settings when the "dev" profile is active
+  - application-postgres.yml   : extra settings when the "postgres" profile is active
+
+-------------------------------------------------------------------------------
+ 6.1  application.yml   (the shared settings)
+-------------------------------------------------------------------------------
+  spring:
+    application:
+      name: booking-platform
+        -> The app's name. Shows up in logs and on the /actuator/info page.
+
+    profiles:
+      default: dev
+        -> If you do not choose a profile, use "dev". THIS is why the app runs
+           on H2 with zero setup out of the box.
+
+    jpa:
+      open-in-view: false
+        -> Turns OFF a common but sloppy behavior where the database connection
+           stays open all the way into the web layer. With it OFF, connections
+           close at the service layer (cleaner, more efficient). This is also WHY
+           the repositories fetch related data up-front with @EntityGraph - so
+           the data is ready before the connection closes.
+      properties:
+        hibernate:
+          jdbc:
+            time_zone: UTC
+        -> Store and read all date/times in UTC (a single, unambiguous time
+           zone), so times are consistent no matter where the server runs.
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info,metrics
+        -> "Actuator" adds operational endpoints. We expose ONLY these three:
+             /actuator/health  (is the app up?),
+             /actuator/info    (basic app info),
+             /actuator/metrics (numbers about the app).
+           Everything else stays hidden for safety.
+    endpoint:
+      health:
+        show-details: when-authorized
+        -> The health page shows extra detail only to authorized (logged-in)
+           callers; anonymous users just see "UP".
+
+  info:
+    app:
+      name: ${spring.application.name}
+      description: Event/ticket booking platform
+        -> Free-text info shown on /actuator/info. ${...} pulls in the app name
+           defined above.
+
+  booking:                      <- OUR OWN custom settings (not Spring's)
+    jwt:
+      secret: "change-me-in-prod-please-use-a-long-random-256-bit-secret-value"
+        -> The secret key used to SIGN login tokens so they cannot be faked.
+           MUST be replaced with a long random value in a real deployment.
+      expiration-minutes: 120
+        -> A login token is valid for 120 minutes (2 hours), then you log in again.
+    hold:
+      window-minutes: 15
+        -> When you book, seats are held for 15 minutes before the hold can expire.
+      sweep-interval-ms: 60000
+        -> The background job that expires old holds runs every 60000 ms (60 sec).
+    reminder:
+      interval-ms: 300000
+        -> The background job that sends reminders runs every 300000 ms (5 min).
+
+  (These booking.* values are read into a tidy Java object called
+   BookingProperties, so the code uses them by name.)
+
+-------------------------------------------------------------------------------
+ 6.2  application-dev.yml   (H2 / local mode - the DEFAULT)
+-------------------------------------------------------------------------------
+  spring:
+    datasource:
+      url: jdbc:h2:mem:booking;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+        -> Connect to an H2 database. Breaking down this URL:
+             jdbc:h2:mem:booking  = an IN-MEMORY H2 database named "booking"
+                                    (lives in RAM; gone when the app stops).
+             DB_CLOSE_DELAY=-1    = keep the database alive as long as the app
+                                    runs (otherwise H2 would erase it the moment
+                                    the first connection closes).
+             MODE=PostgreSQL      = make H2 behave like PostgreSQL, so the same
+                                    SQL works in both modes.
+      username: sa
+      password: ""
+        -> Default H2 login (user "sa", empty password). Fine for local use.
+      driver-class-name: org.h2.Driver
+        -> The Java driver that knows how to talk to H2.
+    jpa:
+      hibernate:
+        ddl-auto: create-drop
+        -> Hibernate CREATES all the tables from the Java entities when the app
+           starts, and DROPS them when it stops. This is why dev needs no schema
+           setup. (This is the ONLY place we let Hibernate build the schema; see
+           postgres mode below.)
+      database-platform: org.hibernate.dialect.H2Dialect
+        -> Tells Hibernate it is talking to H2.
+      show-sql: false
+        -> Do not print every SQL statement in the console (set true to debug).
+    flyway:
+      enabled: false
+        -> Turn OFF Flyway here; in dev, Hibernate builds the schema, not Flyway.
+    h2:
+      console:
+        enabled: true
+        -> Turn on a small web page at http://localhost:8080/h2-console where you
+           can browse the in-memory database while the app runs (JDBC URL
+           jdbc:h2:mem:booking, user sa, no password).
+
+-------------------------------------------------------------------------------
+ 6.3  application-postgres.yml   (PostgreSQL / real mode - OPTIONAL)
+-------------------------------------------------------------------------------
+  spring:
+    datasource:
+      url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/booking}
+        -> Connect to a real PostgreSQL. The ${VAR:default} syntax means:
+             "use the environment variable SPRING_DATASOURCE_URL if it is set,
+              otherwise fall back to jdbc:postgresql://localhost:5432/booking"
+           (host localhost, port 5432, database name "booking").
+      username: ${SPRING_DATASOURCE_USERNAME:booking}
+      password: ${SPRING_DATASOURCE_PASSWORD:booking}
+        -> Same idea: use env vars if provided, else default to booking/booking.
+           This lets you point at any database without editing code.
+      driver-class-name: org.postgresql.Driver
+        -> The Java driver for PostgreSQL.
+    jpa:
+      hibernate:
+        ddl-auto: validate
+        -> Hibernate does NOT change the database here. It only VALIDATES that the
+           tables match the Java entities and REFUSES to start if they differ.
+           This protects the real database from accidental changes.
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
+        -> Tells Hibernate it is talking to PostgreSQL.
+      show-sql: false
+    flyway:
+      enabled: true
+      locations: classpath:db/migration
+        -> Turn ON Flyway and run the SQL migration files found in
+           src/main/resources/db/migration (V1, V2...). Flyway BUILDS the real
+           schema; Hibernate only checks it.
+
+-------------------------------------------------------------------------------
+ 6.4  How "profiles" pick which settings apply
+-------------------------------------------------------------------------------
+A "profile" is a named set of settings. application.yml always applies. On top of
+it, ONE profile-specific file is layered:
+
+  - No choice made        -> "dev"      is used (from application.yml's default) -> H2
+  - SPRING_PROFILES_ACTIVE=postgres      -> "postgres" is used                   -> PostgreSQL
+
+Ways to choose the postgres profile:
+  - Environment variable:  SPRING_PROFILES_ACTIVE=postgres
+  - Maven:                 ./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
+  - IntelliJ run config:   set "Active profiles" to postgres
+
+The SAME code runs in both modes - only the settings differ. That mirrors real
+projects: a light database while developing, a real one in production.
+
+
+===============================================================================
+ 7. THE DATABASE, IN DETAIL
+===============================================================================
+
+-------------------------------------------------------------------------------
+ 7.1  H2 vs PostgreSQL - what, why, when
+-------------------------------------------------------------------------------
+  H2 (dev, default):
+    - An in-memory database: it lives in RAM inside the app.
+    - Created automatically at startup, erased at shutdown (data resets each run).
+    - Needs NOTHING installed. Perfect for trying the app and for fast tests.
+    - Configured in application-dev.yml.
+
+  PostgreSQL (postgres profile):
+    - A real, separate database server that keeps data permanently.
+    - You must run it (a docker-compose.yml is provided for a local one:
+      "docker compose up -d").
+    - The schema is built by Flyway; Hibernate only validates it.
+    - Configured in application-postgres.yml.
+
+  Rule of thumb: use H2 to explore/develop; use PostgreSQL for production-like
+  runs and to keep data.
+
+-------------------------------------------------------------------------------
+ 7.2  Flyway migrations (the SQL files)
+-------------------------------------------------------------------------------
+Flyway is a tool that builds/updates the database using numbered SQL files, run
+in order, exactly once each, and it records which have run. This makes the schema
+reproducible on every machine. (Used only in the postgres profile.)
+
+  src/main/resources/db/migration/
+    V1__core_schema.sql    -> creates: app_user, venue, event, ticket_type
+    V2__booking_schema.sql -> creates: booking, booking_item
+
+Naming: V<number>__<description>.sql. To change the schema later you ADD a new
+file (V3__...), never edit an old one.
+
+-------------------------------------------------------------------------------
+ 7.3  Every table and column
+-------------------------------------------------------------------------------
+(These tables exist in both modes; in dev Hibernate creates them from the Java
+entities, in postgres Flyway creates them from the SQL above - they match.)
+
+  app_user            (a user account)
+    id                 - unique number (primary key)
+    email              - login email (unique)
+    password_hash      - the SCRAMBLED password (never the real one)
+    display_name       - shown name
+    role               - ATTENDEE / ORGANIZER / ADMIN
+    enabled            - is the account active?
+    created_at         - when it was made
+    version            - internal counter for safe concurrent edits
+
+  venue               (a place)
+    id, name, address, city
+    capacity           - how many people it holds
+    version
+
+  event               (something to buy tickets for)
+    id, title, description
+    venue_id           - which venue (link to venue.id)
+    organizer_id       - which user created it (link to app_user.id)
+    starts_at, ends_at - when it happens
+    status             - DRAFT / PUBLISHED / CANCELLED
+    created_at, version
+
+  ticket_type         (a priced tier of an event, e.g. General / VIP)
+    id
+    event_id           - which event (link to event.id)
+    name               - e.g. "VIP"
+    price_cents        - price in cents (whole number; 5000 = 50.00)
+    currency           - 3-letter code, e.g. USD
+    quantity_total     - how many exist
+    quantity_available - how many are still free (goes down as people book)
+    version            - the counter that PREVENTS double-selling
+
+  booking             (one attendee's booking)
+    id
+    event_id           - which event
+    attendee_id        - which user (link to app_user.id)
+    status             - PENDING / PAID / EXPIRED / CANCELLED
+    total_cents        - total price
+    currency
+    payment_reference  - the (fake) receipt number once paid
+    created_at
+    expires_at         - when the hold lapses (while PENDING)
+    version
+
+  booking_item        (one line in a booking, e.g. "2 x VIP")
+    id
+    booking_id         - which booking (link to booking.id)
+    ticket_type_id     - which tier (link to ticket_type.id)
+    quantity           - how many
+    unit_price_cents   - price PER ticket, captured at booking time
+
+Relationships in words:
+  - An event belongs to one venue and one organizer.
+  - An event has many ticket types.
+  - A booking belongs to one event and one attendee.
+  - A booking has many booking items; each item points to one ticket type.
+
+
+===============================================================================
+ 8. THE FEATURES, ONE BY ONE
+===============================================================================
+(Each feature is also documented at the bottom of its own code files, and in
+docs/11-how-each-part-works.md.)
+
+USER - accounts and who you are
+  Register with email + password and a role (ATTENDEE or ORGANIZER; ADMIN cannot
+  be self-created). Passwords are scrambled (BCrypt) before saving. You can fetch
+  your own profile at /api/users/me.
+
+SECURITY - logging in and staying logged in
+  Login checks your password and gives you a signed token (JWT). You send that
+  token on later requests instead of your password. A checkpoint (filter) reads
+  it on every request. Rules decide who can do what (by role, and by ownership).
+
+VENUE - the place an event happens
+  Name, address, city, and capacity (max people). Anyone can view venues; only
+  organizers/admins can create them. Capacity limits how many tickets an event
+  can sell.
+
+EVENT - the thing people buy tickets for
+  Created by an organizer at a venue, with start/end times and ticket tiers.
+  Starts as DRAFT (private), becomes PUBLISHED (on sale) when published, or
+  CANCELLED. Only published events can be booked and appear in the public list.
+
+BOOKING - reserving and holding seats (the core)
+  Booking HOLDS seats immediately (lowers "available"), sets a 15-minute timer,
+  and marks the booking PENDING. Two people racing for the last seats cannot both
+  win (see section 10). Paying marks it PAID; cancelling or timing out returns the
+  seats.
+
+PAYMENT - charging (faked, but realistic)
+  Hidden behind an interface. The current fake approves any valid amount and makes
+  up a receipt number. A real provider can replace it without touching booking code.
+
+NOTIFICATION - telling people
+  Issues tickets and sends reminders - for now by writing to the app log. One place
+  to later connect real email/SMS.
+
+ADMIN - moderation
+  Admin-only: list users, disable/enable a user, force-cancel any event.
+
+
+===============================================================================
+ 9. SECURITY MODEL (login, tokens, roles)
+===============================================================================
+  - Passwords are stored only as BCrypt hashes (one-way scramble).
+  - Login returns a JWT: a signed token containing your email and role. Signed
+    with the secret in application.yml, so it cannot be forged.
+  - The app is STATELESS: it keeps no server-side session; your token proves who
+    you are on each request.
+  - Two layers of access control:
+      * URL rules (in SecurityConfig): e.g. /api/admin/** requires ADMIN;
+        public GETs (browse events/venues), login, ping, and the API docs are open.
+      * Method rules (@PreAuthorize): e.g. only ORGANIZER/ADMIN can create events.
+  - Plus OWNERSHIP checks in services: you can only pay/cancel YOUR bookings,
+    publish YOUR events. Wrong owner -> 403.
+  - Failures come back as clean JSON: 401 (not logged in), 403 (not allowed).
+
+
+===============================================================================
+ 10. SEAT HOLDS & PREVENTING DOUBLE-SELLING (optimistic locking)
+===============================================================================
+The hardest correctness problem: two people click "book the last 2 seats" at the
+same instant. We must never sell the same seat twice.
+
+Solution - OPTIMISTIC LOCKING:
+  - Each ticket_type row has a hidden "version" number.
+  - When a booking holds seats, the app reads the tier and, on saving, the
+    database checks the version is unchanged and bumps it.
+  - If two bookings happen together, both try to move the version from N to N+1,
+    but the database lets only ONE succeed. The other fails safely and is told
+    "not enough seats" - no seat is lost or double-sold.
+  - This avoids locking whole tables (which would be slow).
+
+The HOLD itself:
+  - Booking lowers quantity_available right away (seats reserved) and sets
+    expires_at = now + 15 minutes.
+  - Pay in time -> kept. Otherwise a background job returns the seats (section 12).
+
+The booking row ALSO has a version, so "pay" and "auto-expire" on the same booking
+cannot both apply and corrupt it.
+
+
+===============================================================================
+ 11. CACHING (why and where)
+===============================================================================
+A cache remembers an answer so we do not recompute it every time. We cache EXACTLY
+ONE thing: the public list of published events (asked constantly, changes rarely).
+
+  - Cache name: publishedEvents, using Caffeine (in-memory).
+  - Kept at most 5 minutes, max 500 entries.
+  - Cleared automatically whenever an event is created/published/cancelled, so it
+    is never stale.
+  - We deliberately do NOT cache seat counts or bookings (they change often and
+    must be exact).
+Configured in config/CacheConfig.java; used in event/EventService.java.
+
+
+===============================================================================
+ 12. SCHEDULED BACKGROUND JOBS
+===============================================================================
+Some work runs on a timer, with nobody clicking anything (booking/BookingScheduler):
+
+  - Expire stale holds: every 60 seconds, find PENDING bookings whose 15-minute
+    timer has passed, return their seats, and mark them EXPIRED.
+  - Send reminders: every 5 minutes, find PAID bookings for soon-starting events
+    and send a reminder.
+
+These intervals come from the booking.hold.* / booking.reminder.* settings.
+
+
+===============================================================================
+ 13. IN-PROCESS EVENTS (after-commit ticket issuance)
+===============================================================================
+When a booking is paid, tickets must be issued - but ONLY after the payment is
+safely saved. So paying does not issue tickets directly; it PUBLISHES an internal
+"BookingPaid" announcement. A listener reacts to it, configured to run only AFTER
+the payment transaction has committed.
+
+Why: this guarantees we never issue tickets for a payment that later fails, and a
+problem while issuing tickets can never undo a captured payment.
+Files: booking/BookingPaidEvent.java, booking/BookingPaidListener.java.
+
+
+===============================================================================
+ 14. ERROR HANDLING (RFC 7807)
+===============================================================================
+All errors come back in one consistent JSON shape (the RFC 7807 "ProblemDetail"
+standard: type, title, status, detail). One central file does this for the whole
+app (common/error/GlobalExceptionHandler.java):
+
+  - missing item        -> 404
+  - clash with state    -> 409  (e.g. duplicate email, sold out, wrong status)
+  - bad/unreadable input-> 400  (including an invalid "role" value)
+  - not logged in       -> 401
+  - not allowed         -> 403
+  - unexpected problem  -> 500  (also logged on the server for developers)
+
+Example error:
+  { "type": ".../problems/conflict", "title": "Conflict", "status": 409,
+    "detail": "Email already registered: a@x.com" }
+
+
+===============================================================================
+ 15. INPUT VALIDATION
+===============================================================================
+Incoming request data is checked automatically BEFORE the code runs, using
+annotations on the request shapes (DTOs): @NotBlank, @Email, @Size, @Min, @Future,
+@Pattern, etc. If something is missing or wrong, the caller gets a 400 with a
+list of exactly which fields failed. Harder rules that annotations cannot express
+(end date after start date, tickets fit venue capacity, single currency per
+booking) are checked in the services.
+
+
+===============================================================================
+ 16. THE REST API - EVERY ENDPOINT
+===============================================================================
+(Base URL http://localhost:8080. "auth" = who may call it.)
+
+  PUBLIC / OPS
+    GET  /api/ping                         health heartbeat
+    GET  /actuator/health                  is the app up
+    GET  /actuator/info                    app info
+    GET  /actuator/metrics                 metrics (ADMIN only)
+
+  AUTH (public)
+    POST /api/auth/register                create an account (201)
+    POST /api/auth/login                   log in -> returns a token
+
+  USERS
+    GET  /api/users/me                     your own profile (any logged-in user)
+
+  VENUES
+    GET  /api/venues                       list (public)
+    GET  /api/venues/{id}                  one (public)
+    POST /api/venues                       create (ORGANIZER/ADMIN)
+
+  EVENTS
+    GET  /api/events                       list published (public, cached)
+    GET  /api/events/{id}                  one (public)
+    GET  /api/events/mine                  my events (ORGANIZER/ADMIN)
+    POST /api/events                       create draft (ORGANIZER/ADMIN)
+    POST /api/events/{id}/publish          put on sale (owner)
+    POST /api/events/{id}/cancel           cancel (owner)
+
+  BOOKINGS (ATTENDEE/ADMIN)
+    POST /api/bookings                     create booking, holds seats (201)
+    GET  /api/bookings                     my bookings
+    GET  /api/bookings/{id}                one of mine
+    POST /api/bookings/{id}/pay            pay -> PAID
+    POST /api/bookings/{id}/cancel         cancel -> returns seats
+
+  ADMIN (ADMIN only)
+    GET  /api/admin/users                  list users
+    POST /api/admin/users/{id}/disable     disable a user
+    POST /api/admin/users/{id}/enable      enable a user
+    POST /api/admin/events/{id}/cancel     force-cancel any event
+
+Full request/response shapes: see docs/05-api-reference.md, or the live Swagger
+page at /swagger-ui.html.
+
+
+===============================================================================
+ 17. TESTING (unit + integration)
+===============================================================================
+  - UNIT tests (fast, no database): test one class using fake collaborators
+    (Mockito). Files end in *Test. They run in the normal build.
+      BookingServiceTest  - seat holds, sold-out, pay, expiry, cancel
+      UserServiceTest     - register rules
+      EventServiceTest    - date & capacity checks
+      JwtServiceTest      - token make/verify
+      GlobalExceptionHandlerTest - bad input -> 400 (not 500)
+      BookingApplicationTests    - the app context loads
+  - INTEGRATION test (real PostgreSQL via Testcontainers, needs Docker): drives
+    the whole app over HTTP - register, create, publish, book, pay. File ends in
+    *IT (BookingFlowIT). It is SKIPPED by default so the normal build needs no
+    Docker; run it with:  ./mvnw verify -DskipITs=false
+
+
+===============================================================================
+ 18. BUILDING & PACKAGING (Maven, profiles, the wrapper)
+===============================================================================
+  - ./mvnw spring-boot:run     run the app (dev/H2)
+  - ./mvnw install             compile + run unit tests + build the runnable jar
+                               (integration tests skipped)
+  - ./mvnw verify -DskipITs=false   also run the integration test (needs Docker)
+  - The build produces a single runnable file:
+        target/booking-platform-0.0.1-SNAPSHOT.jar
+    which you can run anywhere with:  java -jar <that file>
+  - "./mvnw" is the Maven WRAPPER: it downloads the correct Maven automatically,
+    so Maven need not be installed.
+  - Integration tests are bound to the Failsafe plugin and excluded by default via
+    a skipITs flag - that is why the normal build does not need Docker.
+
+
+===============================================================================
+ 19. SWAGGER / OPENAPI AND THE POSTMAN COLLECTION
+===============================================================================
+  - Swagger UI (interactive, auto-generated from the code):
+        http://localhost:8080/swagger-ui.html
+    Click "Authorize", paste your login token, and try any endpoint.
+  - The OpenAPI document (the machine-readable API description):
+        http://localhost:8080/v3/api-docs        (JSON)
+        http://localhost:8080/v3/api-docs.yaml     (YAML)
+    Exported copies are saved in docs/openapi.json and docs/openapi.yaml.
+  - Postman collection (import and click through the whole flow):
+        docs/booking-platform.postman_collection.json
+    Login requests auto-save the token; create requests auto-save ids, so the
+    requests chain together. Admin requests use admin@x.com / password1.
+
+
+===============================================================================
+ 20. FILE-BY-FILE REFERENCE
+===============================================================================
+For a complete list of what every file does, see docs/03-file-guide.md. In
+addition, EVERY code file has explanation comments at the BOTTOM of the file:
+first a technical summary, then an "IN SIMPLE WORDS (for a fresher)" section.
+
+Key files to read first:
+  1. BookingApplication.java              - where the app starts
+  2. booking/BookingService.java          - the heart (holds, pay, expire)
+  3. security/SecurityConfig.java + JwtAuthenticationFilter.java - how auth works
+  4. event/EventService.java              - caching + ownership
+  5. common/error/GlobalExceptionHandler.java - how errors become clean JSON
+  6. src/test/.../BookingServiceTest.java - the rules as runnable examples
+
+
+===============================================================================
+ 21. GLOSSARY OF TERMS
+===============================================================================
+  API            - a way for programs to talk to each other over the web.
+  REST           - a common style of web API using URLs + GET/POST/etc.
+  Endpoint       - one specific URL + method the API responds to.
+  DTO            - "Data Transfer Object": the exact shape of data in/out.
+  Entity         - a Java class mapped to a database table (one object = one row).
+  Repository     - the code that reads/writes the database.
+  Service        - the code that holds business rules.
+  Controller     - the code that handles a web request.
+  JWT / token    - a signed digital pass proving who you are after login.
+  Role           - ATTENDEE / ORGANIZER / ADMIN; decides what you may do.
+  Hash (BCrypt)  - a one-way scramble used to store passwords safely.
+  Profile        - a named set of settings (dev = H2, postgres = PostgreSQL).
+  H2             - a tiny in-memory database (no setup, resets on restart).
+  PostgreSQL     - a real, persistent database server.
+  Flyway         - a tool that builds the database from numbered SQL files.
+  Migration      - one of those numbered SQL files (V1, V2...).
+  ddl-auto       - Hibernate's setting for whether it creates/validates tables.
+  Optimistic lock- a "version number" trick that prevents two edits clashing.
+  Seat hold      - reserving seats for a short time before payment.
+  Cache          - remembering an answer to serve it faster.
+  Actuator       - Spring's health/info/metrics endpoints.
+  Lombok         - a library that generates boilerplate code (getters, builders).
+  Testcontainers - starts a real database in Docker for integration tests.
+
+
+===============================================================================
+ 22. WHAT IS INTENTIONALLY NOT INCLUDED (scope & next steps)
+===============================================================================
+This project stops at a clean, runnable, well-documented backend. On purpose, it
+does NOT include:
+  - a real payment provider (payment is a fake behind an interface),
+  - real email/SMS (notifications are logged),
+  - a web/mobile front-end (this is a backend API),
+  - deployment setup (no app Dockerfile, no cloud config),
+  - production hardening beyond the basics (no refresh tokens, rate limiting,
+    pagination on lists, etc.).
+
+Each of these is a natural next step. Because payment and notifications sit behind
+clean interfaces/seams, adding the real versions later does not require changing
+the booking logic. More detail is in docs/06-shipping.md (section 6.8) and
+docs/07-glossary-and-faq.md (section 7.3).
+
+###############################################################################
+#  End of document. For more, see the docs/ folder (start at docs/README.md), #
+#  HOW-IT-WORKS.txt, OVERVIEW.txt, and SETUP-GUIDE.txt.                        #
+###############################################################################
